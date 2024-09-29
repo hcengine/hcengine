@@ -1,0 +1,14 @@
+[package]
+name = "hcengine"
+version = "0.1.0"
+authors = [ "hpnlic <hpnlic@hotmail.com>" ]
+edition = "2021"
+description = "net for Rust"
+repository = "https://github.com/hcengine/hcnet"
+readme = "README.md"
+license = "MIT/Apache-2.0"
+keywords = ["hcnet"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
