@@ -12,3 +12,7 @@ keywords = ["hcnet"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio = { version = "1.40.0", features = ["full"] }
+lazy_static = "1.5.0"
+
+hcnet = "0.1"
