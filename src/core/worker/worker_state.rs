@@ -17,6 +17,10 @@ impl HcWorkerState {
         }
     }
 
+    pub fn id(&self) -> usize {
+        self.id
+    }
+
     pub fn set_shared(&mut self, shared: bool) {
         self.shared.store(shared, Ordering::Relaxed);
     }

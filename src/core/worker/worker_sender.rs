@@ -1,7 +1,7 @@
-use std::sync::{
+use std::{io, sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
-};
+}};
 
 use tokio::sync::mpsc::Sender;
 
@@ -18,5 +18,15 @@ pub struct HcWorkerSender {
 impl HcWorkerSender {
     pub fn new(state: HcWorkerState, sender: Sender<HcMsg>) -> Self {
         Self { sender, state }
+    }
+
+    pub async fn stop(&mut self) -> io::Result<()> {
+
+        Ok(())
+    }
+    
+    pub async fn wait(&mut self) -> io::Result<()> {
+
+        Ok(())
     }
 }

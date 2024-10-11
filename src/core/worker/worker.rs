@@ -1,6 +1,7 @@
 use std::io;
 
-use tokio::sync::mpsc::{channel, Receiver};
+use log::info;
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::core::HcMsg;
 
@@ -10,10 +11,11 @@ pub struct HcWorker {
     pub nextid: usize,
     pub state: HcWorkerState,
     pub recv: Receiver<HcMsg>,
+    pub sender: Sender<HcMsg>,
 }
 
 impl HcWorker {
-    pub fn new(id: usize) -> (Self, HcWorkerSender) {
+    pub fn new(id: usize, send: Sender<HcMsg>) -> (Self, HcWorkerSender) {
         let state = HcWorkerState::new(id);
         let (sender, recv) = channel(usize::MAX >> 3);
         (
@@ -21,12 +23,14 @@ impl HcWorker {
                 nextid: 1,
                 state: state.clone(),
                 recv,
+                sender: send,
             },
             HcWorkerSender::new(state, sender),
         )
     }
 
     pub async fn run(self) -> io::Result<()> {
+        println!("WORKER START {}", self.state.id());
         Ok(())
     }
 }
