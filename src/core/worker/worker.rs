@@ -1,5 +1,6 @@
 use std::io;
 
+use algorithm::TimerRBTree;
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -10,6 +11,7 @@ use super::{HcWorkerSender, HcWorkerState};
 pub struct HcWorker {
     pub nextid: usize,
     pub state: HcWorkerState,
+    pub timer: TimerRBTree<u64>,
     pub recv: Receiver<HcMsg>,
     pub sender: Sender<HcMsg>,
 }
@@ -22,6 +24,7 @@ impl HcWorker {
             Self {
                 nextid: 1,
                 state: state.clone(),
+                timer: TimerRBTree::new(),
                 recv,
                 sender: send,
             },

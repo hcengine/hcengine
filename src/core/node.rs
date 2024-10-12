@@ -76,7 +76,7 @@ impl HcNode {
             }
             tokio::time::sleep(Duration::from_millis(1)).await;
         }
-        self.wait().await;
+        self.wait().await?;
         if self.exitcode == i32::MAX {
             self.exitcode = 0;
         }
