@@ -1,18 +1,18 @@
 use std::{i32, io, time::Duration, usize};
+use tokio::runtime::Runtime;
+use tokio::sync::mpsc::{channel, Receiver};
 
-use tokio::{
-    runtime::Runtime,
-    sync::mpsc::{channel, Receiver},
-};
+use crate::{HcMsg, HcStatusState, HcWorker, HcWorkerState};
 
-use super::{HcMsg, HcState, HcWorker, HcWorkerSender};
+use super::{node_state, HcNodeState};
 
 pub struct HcNode {
-    senders: Vec<HcWorkerSender>,
+    state: HcNodeState,
+    senders: Vec<HcWorkerState>,
     runtimes: Vec<Runtime>,
     recv: Receiver<HcMsg>,
 
-    state: HcState,
+    status: HcStatusState,
     exitcode: i32,
 }
 
@@ -21,8 +21,9 @@ impl HcNode {
         let mut senders = vec![];
         let mut runtimes = vec![];
         let (send, recv) = channel(usize::MAX >> 3);
+        let node_state = HcNodeState::new(send);
         for i in 0..worker_num.max(1) {
-            let (work, sender) = HcWorker::new(i + 1, send.clone());
+            let (work, sender) = HcWorker::new(i + 1, node_state.clone());
             senders.push(sender);
             let rt = tokio::runtime::Runtime::new()?;
             rt.spawn(async {
@@ -34,7 +35,8 @@ impl HcNode {
             senders,
             runtimes,
             recv,
-            state: HcState::Init,
+            state: node_state,
+            status: HcStatusState::Init,
             exitcode: i32::MAX,
         })
     }
@@ -54,7 +56,7 @@ impl HcNode {
                 }
             }
 
-            if self.state == HcState::Stopping {
+            if self.status == HcStatusState::Stopping {
                 let mut alive = 0;
                 for rt in &self.runtimes {
                     if rt.metrics().num_alive_tasks() > 0 {
@@ -74,7 +76,6 @@ impl HcNode {
                     self.deal_msg(v.unwrap()).await?;
                 }
             }
-            tokio::time::sleep(Duration::from_millis(1)).await;
         }
         self.wait().await?;
         if self.exitcode == i32::MAX {
@@ -95,7 +96,7 @@ impl HcNode {
     }
 
     pub async fn run(&mut self) -> io::Result<i32> {
-        self.state = HcState::Ready;
+        self.status = HcStatusState::Ready;
         let r = self.inner_run().await;
         for rt in self.runtimes.drain(..) {
             rt.shutdown_background();

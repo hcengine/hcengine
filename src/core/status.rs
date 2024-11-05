@@ -1,7 +1,7 @@
 
 
 #[derive(PartialEq, Eq)]
-pub enum HcState {
+pub enum HcStatusState {
     Init,
     Ready,
     Stopping,

@@ -1,10 +1,12 @@
-
-mod worker;
-mod node;
 mod msg;
-mod state;
+mod node;
+mod service;
+mod worker;
+mod status;
 
-pub use state::HcState;
-pub use node::HcNode;
+
 pub use msg::HcMsg;
+pub use node::{HcNode, HcNodeState};
+pub use status::HcStatusState;
+pub use service::*;
 pub use worker::*;

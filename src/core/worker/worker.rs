@@ -1,34 +1,36 @@
-use std::io;
+use std::{io, sync::Arc};
 
-use algorithm::TimerRBTree;
+use algorithm::{HashMap, TimerRBTree};
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::core::HcMsg;
+use crate::{core::HcMsg, HcNodeState, LuaService, ServiceWrapper};
 
-use super::{HcWorkerSender, HcWorkerState};
+use super::HcWorkerState;
 
 pub struct HcWorker {
     pub nextid: usize,
     pub state: HcWorkerState,
     pub timer: TimerRBTree<u64>,
     pub recv: Receiver<HcMsg>,
-    pub sender: Sender<HcMsg>,
+    pub node_state: HcNodeState,
+    pub services: HashMap<u32, ServiceWrapper>,
 }
 
 impl HcWorker {
-    pub fn new(id: usize, send: Sender<HcMsg>) -> (Self, HcWorkerSender) {
-        let state = HcWorkerState::new(id);
+    pub fn new(id: usize, node_state: HcNodeState) -> (Self, HcWorkerState) {
         let (sender, recv) = channel(usize::MAX >> 3);
+        let state = HcWorkerState::new(id, sender);
         (
             Self {
                 nextid: 1,
                 state: state.clone(),
                 timer: TimerRBTree::new(),
                 recv,
-                sender: send,
+                node_state,
+                services: HashMap::new(),
             },
-            HcWorkerSender::new(state, sender),
+            state,
         )
     }
 
