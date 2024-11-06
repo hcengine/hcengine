@@ -2,12 +2,13 @@ use std::{i32, io, time::Duration, usize};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Receiver};
 
-use crate::{HcMsg, HcStatusState, HcWorker, HcWorkerState};
+use crate::core::worker;
+use crate::{HcMsg, HcStatusState, HcWorker, HcWorkerState, ServiceConf};
 
 use super::{node_state, HcNodeState};
 
 pub struct HcNode {
-    state: HcNodeState,
+    pub state: HcNodeState,
     senders: Vec<HcWorkerState>,
     runtimes: Vec<Runtime>,
     recv: Receiver<HcMsg>,
@@ -23,7 +24,7 @@ impl HcNode {
         let (send, recv) = channel(usize::MAX >> 3);
         let node_state = HcNodeState::new(send);
         for i in 0..worker_num.max(1) {
-            let (work, sender) = HcWorker::new(i + 1, node_state.clone());
+            let (work, sender) = HcWorker::new(i as u32 + 1, node_state.clone());
             senders.push(sender);
             let rt = tokio::runtime::Runtime::new()?;
             rt.spawn(async {
@@ -85,6 +86,11 @@ impl HcNode {
     }
 
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
+        match msg {
+            HcMsg::Msg(message) => todo!(),
+            HcMsg::NewService(service_conf) => todo!(),
+            HcMsg::Stop(v) => self.exitcode = v,
+        }
         Ok(())
     }
 
@@ -102,5 +108,35 @@ impl HcNode {
             rt.shutdown_background();
         }
         r
+    }
+
+    pub async fn new_service(&mut self, conf: ServiceConf) {
+        let worker = if let Some(worker) = self.get_worker(conf.threadid) {
+            worker
+        } else {
+            self.next_worker()
+        };
+        let _ = worker.sender.send(HcMsg::NewService(conf)).await;
+    }
+
+    pub fn get_worker(&mut self, threadid: usize) -> Option<&mut HcWorkerState> {
+        if threadid > 0 && threadid <= self.senders.len() {
+            return Some(&mut self.senders[threadid - 1]);
+        } else {
+            None
+        }
+    }
+
+    pub fn next_worker(&mut self) -> &mut HcWorkerState {
+        let mut min_count_workerid = 0;
+        let mut min_count = usize::MAX;
+        for sender in &self.senders {
+            let n = sender.count();
+            if sender.is_shared() && n < min_count {
+                min_count = n;
+                min_count_workerid = sender.woker_id();
+            }
+        }
+        &mut self.senders[min_count_workerid.max(1) as usize - 1]
     }
 }
