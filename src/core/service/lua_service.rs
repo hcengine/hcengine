@@ -58,7 +58,7 @@ impl LuaService {
 
             let val: Option<()> = self
                 .lua
-                .exec_string(format!("require(\"{}\")", self.conf.name).to_string());
+                .exec_string(format!("require(\"{}\")", self.conf.source).to_string());
 
             let val: Option<()> = self
             .lua

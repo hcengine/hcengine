@@ -40,6 +40,7 @@ impl HcWorker {
             HcMsg::Msg(message) => todo!(),
             HcMsg::NewService(conf) => self.new_service(conf).await,
             HcMsg::Stop(v) => todo!(),
+            _ => todo!(),
         }
         Ok(())
     }

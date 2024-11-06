@@ -90,6 +90,7 @@ impl HcNode {
             HcMsg::Msg(message) => todo!(),
             HcMsg::NewService(service_conf) => todo!(),
             HcMsg::Stop(v) => self.exitcode = v,
+            _ => todo!(),
         }
         Ok(())
     }

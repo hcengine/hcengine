@@ -9,7 +9,7 @@ async fn main() {
     let state = node.state.clone();
     let mut conf = ServiceConf::default();
     conf.name = "bootstrap".to_string();
-    conf.source = "test".to_string();
+    conf.source = "bootstrap".to_string();
 
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(100)).await;
