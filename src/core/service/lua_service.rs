@@ -52,6 +52,8 @@ impl LuaService {
         unsafe {
             self.lua.openlibs();
 
+            self.lua.add_path(false, "lualib".to_string());
+
             let lua = self.lua.state();
             lua_gc(lua, hclua::LUA_GCSTOP, 0);
             lua_gc(lua, hclua::LUA_GCGEN, 0);
@@ -59,13 +61,8 @@ impl LuaService {
             let val: Option<()> = self
                 .lua
                 .exec_string(format!("require(\"{}\")", self.conf.source).to_string());
-
-            let val: Option<()> = self
-            .lua
-            .exec_string(format!("print(\"{}\")", self.conf.name).to_string());
             println!("zzzzzzzzzz!!!!!!!!!!!");
             val.map(|_| true).unwrap_or(false)
-            // luaL_loadfile(L, f)
         }
     }
 

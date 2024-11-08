@@ -1,10 +1,10 @@
 use std::{io, sync::Arc, time::Duration};
 
-use algorithm::{HashMap, TimerRBTree};
+use algorithm::{buf::{BinaryMut, BtMut}, HashMap, TimerRBTree};
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::{core::HcMsg, Config, HcNodeState, LuaService, ServiceConf, ServiceWrapper};
+use crate::{core::{msg::LuaMsg, HcMsg}, Config, HcNodeState, LuaService, ServiceConf, ServiceWrapper};
 
 use super::HcWorkerState;
 
@@ -71,7 +71,8 @@ impl HcWorker {
     pub async fn new_service(&mut self, conf: ServiceConf) {
         println!("new_service == {:?}", conf);
         let mut counter = 0;
-        let mut service_id = 0;
+        let mut service_id;
+        let creator = conf.creator;
         let session = conf.session;
         loop {
             service_id = self.state.get_next();
@@ -85,6 +86,17 @@ impl HcWorker {
             }
         }
         if service_id == 0 {
+            if session != 0 {
+                let mut data = BinaryMut::new();
+                data.put_u64(service_id as u64);
+                let _ = self.node_state.sender.send(HcMsg::Response(LuaMsg {
+                    ty: Config::PTYPE_INTEGER,
+                    sender: 0,
+                    receiver: creator,
+                    sessionid: session,
+                    data,
+                })).await;
+            }
         } else {
             let mut s = LuaService::new(self.node_state.clone(), self.state.clone(), conf);
             s.set_id(service_id);
@@ -94,6 +106,17 @@ impl HcWorker {
                     let _ = self.node_state.sender.send(HcMsg::Stop(-1)).await;
                 }
                 return;
+            }
+            let mut data = BinaryMut::new();
+            data.put_u64(service_id as u64);
+            if session != 0 {
+                let _ = self.node_state.sender.send(HcMsg::Response(LuaMsg {
+                    ty: Config::PTYPE_INTEGER,
+                    sender: 0,
+                    receiver: creator,
+                    sessionid: session,
+                    data,
+                })).await;
             }
             println!("init!!!!!!!!!!!");
 

@@ -4,8 +4,8 @@ use std::usize;
 pub struct ServiceConf {
     pub unique: bool,
     pub threadid: usize,
-    pub creator: usize,
-    pub session: u64,
+    pub creator: u32,
+    pub session: i64,
     // pub service_id: Option<u64>,
     pub memlimit: usize,
     pub ty: String,
