@@ -5,6 +5,13 @@ use hcengine::{HcNode, ServiceConf};
 #[tokio::main]
 async fn main() {
 
+    let mut value: u32 = 123456;
+    let pt = &mut value as *mut u32;
+    let p = pt as usize;
+    println!("p === 0x{:x}", p);
+    // let x: *const u32 = std::ptr::addr_of!(p);
+
+
     let mut node = HcNode::new(1).unwrap();
     let state = node.state.clone();
     let mut conf = ServiceConf::default();

@@ -101,11 +101,16 @@ impl HcWorker {
             let mut s = LuaService::new(self.node_state.clone(), self.state.clone(), conf);
             s.set_id(service_id);
 
-            if !s.init() {
-                if service_id == Config::BOOTSTRAP_ADDR {
-                    let _ = self.node_state.sender.send(HcMsg::Stop(-1)).await;
+            let service = Box::into_raw(Box::new(s));
+            unsafe {
+                if !(*service).init() {
+                    if service_id == Config::BOOTSTRAP_ADDR {
+                        let _ = self.node_state.sender.send(HcMsg::Stop(-1)).await;
+                    }
+                    return;
                 }
-                return;
+
+                self.services.insert(service_id, ServiceWrapper(service));
             }
             let mut data = BinaryMut::new();
             data.put_u64(service_id as u64);

@@ -1,4 +1,6 @@
-use hclua::{luaL_loadfile, luaL_openlibs, lua_gc, Lua};
+use std::ptr;
+
+use hclua::{luaL_loadfile, luaL_openlibs, lua_gc, lua_getgs, lua_newthread, Lua};
 
 use crate::{HcNodeState, HcWorkerState};
 
@@ -14,7 +16,7 @@ pub struct LuaService {
     ok: bool,
 }
 
-pub struct ServiceWrapper(*mut LuaService);
+pub struct ServiceWrapper(pub *mut LuaService);
 
 unsafe impl Sync for ServiceWrapper {}
 unsafe impl Send for ServiceWrapper {}
@@ -29,6 +31,7 @@ impl LuaService {
         } else {
             Lua::new()
         };
+
         Self {
             id: 0,
             unique: conf.unique,
@@ -51,7 +54,8 @@ impl LuaService {
     pub fn init(&mut self) -> bool {
         unsafe {
             self.lua.openlibs();
-
+            let service = self as *mut LuaService;
+            self.lua.copy_to_extraspace(service);
             self.lua.add_path(false, "lualib".to_string());
 
             let lua = self.lua.state();

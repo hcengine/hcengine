@@ -123,6 +123,7 @@ local function _dispath(msg)
     LuaMsg.del(msg)
 end
 
+--- 消息分配器
 _G["hc_msg_dispath"] = _dispath
 
 print("cccccccccccc?????")

@@ -17,6 +17,6 @@ lazy_static = "1.5.0"
 log="0.4.22"
 hcnet = "0.1"
 # hclua = {version = "0.1.5", features = ["lua52"]}
-hclua = {path="../hclua", features = ["lua52"]}
+hclua = {path="../hclua", features = ["lua53"]}
 algorithm = "0.1.13"
 
