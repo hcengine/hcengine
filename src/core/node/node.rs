@@ -3,7 +3,7 @@ use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Receiver};
 
 use crate::core::worker;
-use crate::{HcMsg, HcStatusState, HcWorker, HcWorkerState, ServiceConf};
+use crate::{Config, HcMsg, HcStatusState, HcWorker, HcWorkerState, ServiceConf};
 
 use super::{node_state, HcNodeState};
 
@@ -45,7 +45,7 @@ impl HcNode {
     async fn inner_run(&mut self) -> io::Result<i32> {
         let mut stop_once = false;
         loop {
-            if self.exitcode < 0 {
+            if self.exitcode <= 0 {
                 break;
             }
 
@@ -90,6 +90,16 @@ impl HcNode {
             HcMsg::Msg(message) => todo!(),
             HcMsg::NewService(service_conf) => todo!(),
             HcMsg::Stop(v) => self.exitcode = v,
+            HcMsg::CloseService(service_id) => {
+                let woker_id = (service_id >> Config::WORKER_ID_SHIFT + 1) as usize;
+                if woker_id >= self.senders.len() {
+                    return Ok(());
+                }
+
+                let sender = &mut self.senders[woker_id];
+                let _ = sender.sender.send(msg).await;
+
+            }
             _ => todo!(),
         }
         Ok(())

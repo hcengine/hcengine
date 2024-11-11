@@ -40,6 +40,15 @@ impl HcWorker {
             HcMsg::Msg(message) => todo!(),
             HcMsg::NewService(conf) => self.new_service(conf).await,
             HcMsg::Stop(v) => todo!(),
+            HcMsg::CloseService(v) => {
+                if v == Config::BOOTSTRAP_ADDR {
+                    let _  = self.node_state.sender.send(HcMsg::Stop(0)).await;
+                    return Ok(())
+                }
+                if let Some(service) = self.services.remove(&v) {
+
+                }
+            }
             _ => todo!(),
         }
         Ok(())
@@ -109,6 +118,7 @@ impl HcWorker {
                     }
                     return;
                 }
+                // println!("aaaaaaaaaaa ============ {:p}", service);
 
                 self.services.insert(service_id, ServiceWrapper(service));
             }

@@ -1,8 +1,8 @@
 use std::ptr;
 
-use hclua::{luaL_loadfile, luaL_openlibs, lua_gc, lua_getgs, lua_newthread, Lua};
+use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
 
-use crate::{HcNodeState, HcWorkerState};
+use crate::{luareg_hc_core, HcNodeState, HcWorkerState};
 
 use super::ServiceConf;
 
@@ -43,6 +43,11 @@ impl LuaService {
         }
     }
 
+    
+    pub unsafe fn get(lua: *mut lua_State) -> *mut LuaService {
+        Lua::read_from_extraspace::<LuaService>(lua)
+    }
+
     pub fn set_id(&mut self, id: u32) {
         self.id = id;
     }
@@ -51,11 +56,21 @@ impl LuaService {
         self.id
     }
 
+    pub fn is_unique(&self) -> bool {
+        self.unique
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.conf.name
+    }
+
     pub fn init(&mut self) -> bool {
         unsafe {
             self.lua.openlibs();
             let service = self as *mut LuaService;
-            self.lua.copy_to_extraspace(service);
+            println!("aaa ============ {:p}", service);
+            Lua::copy_to_extraspace(self.lua.state(), service);
+            luareg_hc_core(self.lua.state());
             self.lua.add_path(false, "lualib".to_string());
 
             let lua = self.lua.state();
@@ -76,5 +91,19 @@ impl LuaService {
 
     pub fn is_ok(&self) -> bool {
         self.ok
+    }
+
+    pub fn exit(&mut self, exitcode: i32) {
+        let sender = self.node.sender.clone();
+        tokio::spawn(async move {
+            let _ = sender.send(crate::HcMsg::Stop(exitcode)).await;
+        });
+    }
+    
+    pub fn close(&mut self, service_id: u32) {
+        let sender = self.node.sender.clone();
+        tokio::spawn(async move {
+            let _ = sender.send(crate::HcMsg::CloseService(service_id)).await;
+        });
     }
 }

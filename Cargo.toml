@@ -19,4 +19,5 @@ hcnet = "0.1"
 # hclua = {version = "0.1.5", features = ["lua52"]}
 hclua = {path="../hclua", features = ["lua53"]}
 algorithm = "0.1.13"
+libc = "0.2.162"
 

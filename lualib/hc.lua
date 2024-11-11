@@ -1,4 +1,6 @@
 
+local core = require("hc.core")
+
 local co_create = coroutine.create
 local co_running = coroutine.running
 local co_yield = coroutine.yield
@@ -21,7 +23,10 @@ local function wrap_co_resume(co, ...)
     return ok, err
 end
 
-local hc = {}
+---@class hc : core
+local hc = core
+
+
 
 local co_num = 0
 
