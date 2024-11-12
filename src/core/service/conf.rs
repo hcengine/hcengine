@@ -1,12 +1,12 @@
 use std::usize;
+use hclua::ObjectMacro;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ObjectMacro)]
 pub struct ServiceConf {
     pub unique: bool,
     pub threadid: usize,
     pub creator: u32,
     pub session: i64,
-    // pub service_id: Option<u64>,
     pub memlimit: usize,
     pub ty: String,
     pub name: String,

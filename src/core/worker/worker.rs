@@ -1,10 +1,16 @@
 use std::{io, sync::Arc, time::Duration};
 
-use algorithm::{buf::{BinaryMut, BtMut}, HashMap, TimerRBTree};
+use algorithm::{
+    buf::{BinaryMut, BtMut},
+    HashMap, TimerRBTree,
+};
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::{core::{msg::LuaMsg, HcMsg}, Config, HcNodeState, LuaService, ServiceConf, ServiceWrapper};
+use crate::{
+    core::{msg::LuaMsg, HcMsg},
+    Config, HcNodeState, LuaService, ServiceConf, ServiceWrapper,
+};
 
 use super::HcWorkerState;
 
@@ -34,19 +40,20 @@ impl HcWorker {
         )
     }
 
-    
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
         match msg {
             HcMsg::Msg(message) => todo!(),
             HcMsg::NewService(conf) => self.new_service(conf).await,
-            HcMsg::Stop(v) => todo!(),
             HcMsg::CloseService(v) => {
                 if v == Config::BOOTSTRAP_ADDR {
-                    let _  = self.node_state.sender.send(HcMsg::Stop(0)).await;
-                    return Ok(())
+                    let _ = self.node_state.sender.send(HcMsg::Stop(0)).await;
+                    return Ok(());
                 }
                 if let Some(service) = self.services.remove(&v) {
-
+                    unsafe {
+                        (*service.0).set_ok(false);
+                        LuaService::remove_self(service.0);
+                    };
                 }
             }
             _ => todo!(),
@@ -57,7 +64,6 @@ impl HcWorker {
     async fn inner_run(&mut self) -> io::Result<i32> {
         let mut stop_once = false;
         loop {
-            
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_millis(1)) => {continue}
                 v = self.recv.recv() => {
@@ -98,13 +104,17 @@ impl HcWorker {
             if session != 0 {
                 let mut data = BinaryMut::new();
                 data.put_u64(service_id as u64);
-                let _ = self.node_state.sender.send(HcMsg::Response(LuaMsg {
-                    ty: Config::PTYPE_INTEGER,
-                    sender: 0,
-                    receiver: creator,
-                    sessionid: session,
-                    data,
-                })).await;
+                let _ = self
+                    .node_state
+                    .sender
+                    .send(HcMsg::Response(LuaMsg {
+                        ty: Config::PTYPE_INTEGER,
+                        sender: 0,
+                        receiver: creator,
+                        sessionid: session,
+                        data,
+                    }))
+                    .await;
             }
         } else {
             let mut s = LuaService::new(self.node_state.clone(), self.state.clone(), conf);
@@ -125,16 +135,19 @@ impl HcWorker {
             let mut data = BinaryMut::new();
             data.put_u64(service_id as u64);
             if session != 0 {
-                let _ = self.node_state.sender.send(HcMsg::Response(LuaMsg {
-                    ty: Config::PTYPE_INTEGER,
-                    sender: 0,
-                    receiver: creator,
-                    sessionid: session,
-                    data,
-                })).await;
+                let _ = self
+                    .node_state
+                    .sender
+                    .send(HcMsg::Response(LuaMsg {
+                        ty: Config::PTYPE_INTEGER,
+                        sender: 0,
+                        receiver: creator,
+                        sessionid: session,
+                        data,
+                    }))
+                    .await;
             }
             println!("init!!!!!!!!!!!");
-
         }
 
         // conf.service_id = Some(service_id);

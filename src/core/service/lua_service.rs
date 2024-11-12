@@ -81,7 +81,8 @@ impl LuaService {
                 .lua
                 .exec_string(format!("require(\"{}\")", self.conf.source).to_string());
             println!("zzzzzzzzzz!!!!!!!!!!!");
-            val.map(|_| true).unwrap_or(false)
+            self.ok = val.map(|_| true).unwrap_or(false);
+            self.ok
         }
     }
 
@@ -106,4 +107,20 @@ impl LuaService {
             let _ = sender.send(crate::HcMsg::CloseService(service_id)).await;
         });
     }
+
+    pub fn new_service(&mut self, conf: ServiceConf) {
+        let sender = self.node.sender.clone();
+        tokio::spawn(async move {
+            let _ = sender.send(crate::HcMsg::NewService(conf)).await;
+        });
+    }
+
+    pub fn remove_self(service: *mut LuaService) {
+        unsafe {
+            let server = &mut *service;
+            let _: Option<()> = server.lua.exec_func("stop_world");
+            let _ = Box::from_raw(service);
+        }
+    }
+
 }

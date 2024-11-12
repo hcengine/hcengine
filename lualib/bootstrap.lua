@@ -14,5 +14,14 @@ end)
 
 print("2222222222")
 
-hc.close(0)
-hc.exit(0)
+hc.async(function()
+    --- @type ServerConf
+    local conf = ServerConf.new();
+    conf:set_from_table({
+        creator = hc.id,
+        name = "test"
+    });
+    hc.new_service(conf)
+end)
+-- hc.close(0x01000001)
+-- hc.exit(0)

@@ -7,6 +7,8 @@ local co_yield = coroutine.yield
 local co_resume = coroutine.resume
 local co_close = coroutine.close
 
+local _newservice = core.new_service
+
 local session_id_coroutine = {}
 local protocol = {}
 local session_watcher = {}
@@ -83,6 +85,11 @@ hc.wait = function(session, receiver)
     end
 end
 
+---@param conf ServerConf
+hc.new_service = function(conf)
+    return hc.wait(_newservice(conf))
+end
+
 ---@param msg LuaMsg
 local function _wrap_dispath(msg)
     local p = protocol[msg.ty]
@@ -128,8 +135,14 @@ local function _dispath(msg)
     LuaMsg.del(msg)
 end
 
+--- 关闭lua接口, 清理lua资源, 将不能再调用任何数据
+local function _stop_world()
+    print("stop_world:%d", hc.id)
+end
+
 --- 消息分配器
 _G["hc_msg_dispath"] = _dispath
+_G["stop_world"] = _stop_world
 
 print("cccccccccccc?????")
 

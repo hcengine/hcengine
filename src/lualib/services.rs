@@ -1,16 +1,12 @@
-use hclua::{lua_State, Lua, LuaTable};
+use hclua::{lua_State, Lua, LuaTable, WrapObject};
 
-use crate::{LuaService, ServiceWrapper};
+use crate::{LuaService, ServiceConf, ServiceWrapper};
 
 
 #[hclua::lua_module(name="hc_core")]
 fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
     unsafe {
         let service = LuaService::get(lua.state());
-        // let ptr = service as usize;
-        // println!("============ {:p} ptr = {ptr}", service);
-        // let wrap = ServiceWrapper(service);
-        // println!("============ {:p} ptr = {ptr}", wrap.0);
         if service.is_null() {
             lua.error(format!("当前额外空间中必须注册LuaService对象"));
             return None;
@@ -23,11 +19,16 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             println!("close !!!!!!!!! ============ {:p}", service);
             (*service).exit(c);
         }));
-        
+
         table.set("close", hclua::function1(move |service_id: u32| {
             println!("close !!!!!!!!! ============ {:p}", service);
             (*service).close(service_id);
         }));
+
+        // table.set("new_service", hclua::function1(move |conf: WrapObject<ServiceConf>| {
+        //     println!("close !!!!!!!!! ============ {:p}", service);
+        //     (*service).new_service(conf.0);
+        // }));
         Some(table)
     }
 }

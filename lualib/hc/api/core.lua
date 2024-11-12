@@ -14,4 +14,9 @@ function core.exit(exitcode) end
 --- @param service_id  integer 服务器id
 function core.close(service_id) end
 
+
+--- new service
+--- @param conf ServerConf 配置
+function core.new_service(conf) end
+
 return core
