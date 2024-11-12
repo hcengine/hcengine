@@ -20,4 +20,4 @@ hcnet = "0.1"
 hclua = {path="../hclua", features = ["lua53"]}
 algorithm = "0.1.13"
 libc = "0.2.162"
-
+env_logger = "0.11.5"

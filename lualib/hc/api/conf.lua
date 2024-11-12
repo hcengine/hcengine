@@ -1,6 +1,6 @@
 error("辅助编译器解读")
 
----@class ServerConf: object
+---@class ServiceConf: object
 ---@field public unique boolean 
 ---@field public threadid integer 
 ---@field public creator integer 
@@ -10,4 +10,4 @@ error("辅助编译器解读")
 ---@field public name string 
 ---@field public source string 
 ---@field public params string 
-ServerConf = { }
+ServiceConf = { }

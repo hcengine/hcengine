@@ -88,7 +88,9 @@ impl HcNode {
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
         match msg {
             HcMsg::Msg(message) => todo!(),
-            HcMsg::NewService(service_conf) => todo!(),
+            HcMsg::NewService(service_conf) => {
+                self.new_service(service_conf).await;
+            },
             HcMsg::Stop(v) => self.exitcode = v,
             HcMsg::CloseService(service_id) => {
                 let woker_id = (service_id >> Config::WORKER_ID_SHIFT + 1) as usize;

@@ -15,8 +15,9 @@ end)
 print("2222222222")
 
 hc.async(function()
-    --- @type ServerConf
-    local conf = ServerConf.new();
+    print("neeeeeeeeeeeeeeeeeee");
+    --- @type ServiceConf
+    local conf = ServiceConf.new();
     conf:set_from_table({
         creator = hc.id,
         name = "test"

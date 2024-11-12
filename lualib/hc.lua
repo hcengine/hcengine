@@ -6,6 +6,9 @@ local co_running = coroutine.running
 local co_yield = coroutine.yield
 local co_resume = coroutine.resume
 local co_close = coroutine.close
+if not co_close then
+    co_close = function() end
+end
 
 local _newservice = core.new_service
 

@@ -25,23 +25,10 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             (*service).close(service_id);
         }));
 
-        // table.set("new_service", hclua::function1(move |conf: WrapObject<ServiceConf>| {
-        //     println!("close !!!!!!!!! ============ {:p}", service);
-        //     (*service).new_service(conf.0);
-        // }));
+        table.set("new_service", hclua::function1(move |conf: WrapObject<ServiceConf>| {
+            println!("close !!!!!!!!! ============ {:p}", service);
+            (*service).new_service(conf.0);
+        }));
         Some(table)
     }
-}
-
- extern "C" fn core_exit(lua: *mut lua_State) -> libc::c_int {
-    unsafe {
-        let service = LuaService::get(lua);
-        println!("============ {:p}", service);
-        if service.is_null() {
-            return 0;
-        }
-        let exitcode = hclua::lua_tointeger(lua, 1);
-        (*service).exit(exitcode as i32);
-    }
-    0
 }

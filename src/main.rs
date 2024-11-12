@@ -4,7 +4,7 @@ use hcengine::{HcNode, ServiceConf};
 
 #[tokio::main]
 async fn main() {
-
+    env_logger::init();
     let mut value: u32 = 123456;
     let pt = &mut value as *mut u32;
     let p = pt as usize;

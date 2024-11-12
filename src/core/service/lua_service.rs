@@ -2,7 +2,7 @@ use std::ptr;
 
 use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
 
-use crate::{luareg_hc_core, HcNodeState, HcWorkerState};
+use crate::{luareg_hc_core, HcNodeState, HcWorkerState, LuaMsg};
 
 use super::ServiceConf;
 
@@ -71,6 +71,8 @@ impl LuaService {
             println!("aaa ============ {:p}", service);
             Lua::copy_to_extraspace(self.lua.state(), service);
             luareg_hc_core(self.lua.state());
+            ServiceConf::register(&mut self.lua);
+            LuaMsg::register(&mut self.lua);
             self.lua.add_path(false, "lualib".to_string());
 
             let lua = self.lua.state();
