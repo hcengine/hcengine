@@ -15,7 +15,7 @@ pub struct LuaMsg {
 
 impl LuaMsg {
     pub fn register_all(lua: &mut Lua) {
-        Self::register_field(lua);
+        Self::register(lua);
         LuaObject::<LuaMsg>::object_def(lua, "read_u64", hclua::function1(Self::read_u64));
         LuaObject::<LuaMsg>::object_def(lua, "read_i64", hclua::function1(Self::read_i64));
         LuaObject::<LuaMsg>::object_def(lua, "read_f32", hclua::function1(Self::read_f32));

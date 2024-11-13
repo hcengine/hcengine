@@ -71,9 +71,10 @@ hc.wait = function(session, receiver)
     end
 
     local a, b, c = co_yield()
+    print("xxx ", a, b, c)
     if a then
         -- LuaMsg
-        return protocol[c].unpack(a, b)
+        return protocol[a.ty].unpack(a)
     else
         -- false, "BREAK", {...}
         if session then
@@ -129,17 +130,6 @@ hc.register_protocol({
     end,
     dispatch = function() end,
 })
-
-hc.register_protocol({
-    name = "number",
-    ty = hc.TY_NUMBER,
-    pack = function(...) return ... end,
-    unpack = function(msg)
-        return msg:read_f64()
-    end,
-    dispatch = function() end,
-})
-
 
 hc.register_protocol({
     name = "number",

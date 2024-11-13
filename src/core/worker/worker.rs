@@ -87,11 +87,28 @@ impl HcWorker {
     }
 
     pub async fn new_service(&mut self, conf: ServiceConf) {
-        println!("new_service == {:?}", conf);
-        let mut counter = 0;
-        let mut service_id;
+        println!("new_service == {:?} id = {}", conf, self.state.woker_id());
         let creator = conf.creator;
         let session = conf.session;
+        if let Some(_) = self.node_state.query_service(&conf.name) {
+            let mut data = BinaryMut::new();
+            data.put_u64(0 as u64);
+            let _ = self
+                .node_state
+                .sender
+                .send(HcMsg::Response(LuaMsg {
+                    ty: Config::TY_INTEGER,
+                    sender: 0,
+                    receiver: creator,
+                    sessionid: session,
+                    data,
+                }))
+                .await;
+            return;
+        }
+        let mut counter = 0;
+        let mut service_id;
+        let name = conf.name.clone();
         loop {
             service_id = self.state.get_next();
             if !self.services.contains_key(&service_id) {
@@ -111,7 +128,7 @@ impl HcWorker {
                     .node_state
                     .sender
                     .send(HcMsg::Response(LuaMsg {
-                        ty: Config::PTYPE_INTEGER,
+                        ty: Config::TY_INTEGER,
                         sender: 0,
                         receiver: creator,
                         sessionid: session,
@@ -131,10 +148,10 @@ impl HcWorker {
                     }
                     return;
                 }
-                // println!("aaaaaaaaaaa ============ {:p}", service);
-
                 self.services.insert(service_id, ServiceWrapper(service));
+                self.node_state.insert_service(name, service_id);
             }
+            self.state.add_count();
             let mut data = BinaryMut::new();
             data.put_u64(service_id as u64);
             if session != 0 {
@@ -142,7 +159,7 @@ impl HcWorker {
                     .node_state
                     .sender
                     .send(HcMsg::Response(LuaMsg {
-                        ty: Config::PTYPE_INTEGER,
+                        ty: Config::TY_INTEGER,
                         sender: 0,
                         receiver: creator,
                         sessionid: session,

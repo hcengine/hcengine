@@ -18,7 +18,7 @@ impl Default for ServiceConf {
     fn default() -> Self {
         Self {
             unique: false,
-            threadid: 1,
+            threadid: usize::MAX,
             creator: 0,
             session: 0,
             // service_id: None,

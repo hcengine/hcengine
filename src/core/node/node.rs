@@ -160,6 +160,6 @@ impl HcNode {
                 min_count_workerid = sender.woker_id();
             }
         }
-        &mut self.senders[min_count_workerid.max(1) as usize - 1]
+        &mut self.senders[min_count_workerid as usize]
     }
 }

@@ -12,11 +12,12 @@ async fn main() {
     // let x: *const u32 = std::ptr::addr_of!(p);
 
 
-    let mut node = HcNode::new(1).unwrap();
+    let mut node = HcNode::new(4).unwrap();
     let state = node.state.clone();
     let mut conf = ServiceConf::default();
     conf.name = "bootstrap".to_string();
     conf.source = "bootstrap".to_string();
+    conf.threadid = 0;
 
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(100)).await;

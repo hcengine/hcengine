@@ -23,7 +23,7 @@ impl HcWorkerState {
     pub fn new(worker_id: u32, sender: Sender<HcMsg>) -> Self {
         Self {
             worker_id,
-            shared: Arc::new(AtomicBool::new(false)),
+            shared: Arc::new(AtomicBool::new(true)),
             count: Arc::new(AtomicUsize::new(0)),
             next: Arc::new(AtomicU32::new(0)),
             sender,
@@ -36,6 +36,10 @@ impl HcWorkerState {
 
     pub fn count(&self) -> usize {
         self.count.load(Ordering::Acquire)
+    }
+
+    pub fn add_count(&self) {
+        self.count.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn set_shared(&mut self, shared: bool) {
