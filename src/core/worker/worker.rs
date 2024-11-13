@@ -56,6 +56,9 @@ impl HcWorker {
                     };
                 }
             }
+            HcMsg::Response(msg) => {
+                self.response(msg).await;
+            }
             _ => todo!(),
         }
         Ok(())
@@ -152,5 +155,17 @@ impl HcWorker {
 
         // conf.service_id = Some(service_id);
         // conf.service_id.unwrap_or(0)
+    }
+
+    
+    pub async fn response(&mut self, msg: LuaMsg) {
+        let service_id = Config::get_service_id(msg.receiver);
+        if let Some(service) = self.services.get_mut(&service_id) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).response(msg).await;
+                }
+            }
+        }
     }
 }

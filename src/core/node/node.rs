@@ -3,7 +3,7 @@ use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Receiver};
 
 use crate::core::worker;
-use crate::{Config, HcMsg, HcStatusState, HcWorker, HcWorkerState, ServiceConf};
+use crate::{Config, HcMsg, HcStatusState, HcWorker, HcWorkerState, LuaMsg, ServiceConf};
 
 use super::{node_state, HcNodeState};
 
@@ -24,7 +24,7 @@ impl HcNode {
         let (send, recv) = channel(usize::MAX >> 3);
         let node_state = HcNodeState::new(send);
         for i in 0..worker_num.max(1) {
-            let (work, sender) = HcWorker::new(i as u32 + 1, node_state.clone());
+            let (work, sender) = HcWorker::new(i as u32, node_state.clone());
             senders.push(sender);
             let rt = tokio::runtime::Runtime::new()?;
             rt.spawn(async {
@@ -93,7 +93,7 @@ impl HcNode {
             },
             HcMsg::Stop(v) => self.exitcode = v,
             HcMsg::CloseService(service_id) => {
-                let woker_id = (service_id >> Config::WORKER_ID_SHIFT + 1) as usize;
+                let woker_id = Config::get_workid(service_id);
                 if woker_id >= self.senders.len() {
                     return Ok(());
                 }
@@ -101,6 +101,9 @@ impl HcNode {
                 let sender = &mut self.senders[woker_id];
                 let _ = sender.sender.send(msg).await;
 
+            }
+            HcMsg::Response(msg) => {
+                self.response(msg).await;
             }
             _ => todo!(),
         }
@@ -123,6 +126,13 @@ impl HcNode {
         r
     }
 
+    pub async fn response(&mut self, msg: LuaMsg) {
+        let worker_id = Config::get_workid(msg.receiver);
+        if let Some(worker) = self.get_worker(worker_id) {
+            let _ = worker.sender.send(HcMsg::Response(msg)).await;
+        }
+    }
+
     pub async fn new_service(&mut self, conf: ServiceConf) {
         let worker = if let Some(worker) = self.get_worker(conf.threadid) {
             worker
@@ -133,8 +143,8 @@ impl HcNode {
     }
 
     pub fn get_worker(&mut self, threadid: usize) -> Option<&mut HcWorkerState> {
-        if threadid > 0 && threadid <= self.senders.len() {
-            return Some(&mut self.senders[threadid - 1]);
+        if threadid < self.senders.len() {
+            return Some(&mut self.senders[threadid]);
         } else {
             None
         }

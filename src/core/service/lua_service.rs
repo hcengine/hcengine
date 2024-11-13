@@ -11,8 +11,8 @@ pub struct LuaService {
     conf: ServiceConf,
     id: u32,
     unique: bool,
-    node: HcNodeState,
-    worker: HcWorkerState,
+    pub node: HcNodeState,
+    pub worker: HcWorkerState,
     ok: bool,
 }
 
@@ -74,6 +74,7 @@ impl LuaService {
             ServiceConf::register(&mut self.lua);
             LuaMsg::register(&mut self.lua);
             self.lua.add_path(false, "lualib".to_string());
+            self.lua.add_path(false, "game".to_string());
 
             let lua = self.lua.state();
             lua_gc(lua, hclua::LUA_GCSTOP, 0);
@@ -123,6 +124,12 @@ impl LuaService {
             let _: Option<()> = server.lua.exec_func("stop_world");
             let _ = Box::from_raw(service);
         }
+    }
+
+    
+    pub async fn response(&mut self, msg: LuaMsg) {
+        println!("lua service response ================");
+        let _: Option<()> = self.lua.read_func1("hc_msg_dispath", msg);
     }
 
 }

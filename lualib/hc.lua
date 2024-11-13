@@ -88,10 +88,80 @@ hc.wait = function(session, receiver)
     end
 end
 
----@param conf ServerConf
+---@param conf ServiceConf
 hc.new_service = function(conf)
     return hc.wait(_newservice(conf))
 end
+
+---------------------------------------------
+------protocol message ----------------------
+
+hc.TY_UNKNOWN = 0;
+hc.TY_INTEGER = 1;
+hc.TY_NUMBER = 2;
+hc.TY_STRING = 3;
+hc.TY_LUA = 4;
+
+
+hc.register_protocol = function(t)
+    local ty = t.ty
+    if protocol[ty] then
+        print("重复注册协议:", ty)
+    end
+    protocol[ty] = t
+    protocol[t.name] = t
+end
+
+hc.register_protocol({
+    name = "lua",
+    ty = hc.TY_LUA,
+    pack = function() end,
+    unpack = function() end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "integer",
+    ty = hc.TY_INTEGER,
+    pack = function(...) return ... end,
+    unpack = function(msg)
+        return msg:read_i64()
+    end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "number",
+    ty = hc.TY_NUMBER,
+    pack = function(...) return ... end,
+    unpack = function(msg)
+        return msg:read_f64()
+    end,
+    dispatch = function() end,
+})
+
+
+hc.register_protocol({
+    name = "number",
+    ty = hc.TY_NUMBER,
+    pack = function(...) return ... end,
+    unpack = function(msg)
+        return msg:read_f64()
+    end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "string",
+    ty = hc.TY_STRING,
+    pack = function(...) return ... end,
+    unpack = function(msg)
+        return msg:read_str()
+    end,
+    dispatch = function() end,
+})
+------protocol message ----------------------
+---------------------------------------------
 
 ---@param msg LuaMsg
 local function _wrap_dispath(msg)

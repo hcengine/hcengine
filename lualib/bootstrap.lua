@@ -20,7 +20,8 @@ hc.async(function()
     local conf = ServiceConf.new();
     conf:set_from_table({
         creator = hc.id,
-        name = "test"
+        name = "test",
+        source = "test",
     });
     hc.new_service(conf)
 end)

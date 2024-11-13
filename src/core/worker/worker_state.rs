@@ -47,7 +47,7 @@ impl HcWorkerState {
     }
 
     pub fn get_next(&mut self) -> u32 {
-        let id = self.next.fetch_and(1, Ordering::Relaxed);
+        let id = self.next.fetch_add(1, Ordering::Relaxed);
         id.max(1) | (self.worker_id << Config::WORKER_ID_SHIFT)
     }
 

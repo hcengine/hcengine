@@ -1,5 +1,5 @@
 use std::sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering},
     Arc,
 };
 
@@ -9,19 +9,19 @@ use crate::HcMsg;
 
 #[derive(Clone)]
 pub struct HcNodeState {
-    next: Arc<AtomicUsize>,
+    next: Arc<AtomicU32>,
     pub sender: Sender<HcMsg>,
 }
 
 impl HcNodeState {
     pub fn new(sender: Sender<HcMsg>) -> Self {
         Self {
-            next: Arc::new(AtomicUsize::new(1)),
+            next: Arc::new(AtomicU32::new(1)),
             sender,
         }
     }
 
-    pub fn next_seq(&mut self) -> usize {
+    pub fn next_seq(&mut self) -> u32 {
         self.next.fetch_add(1, Ordering::Relaxed)
     }
 }

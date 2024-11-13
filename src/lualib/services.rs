@@ -25,9 +25,13 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             (*service).close(service_id);
         }));
 
-        table.set("new_service", hclua::function1(move |conf: WrapObject<ServiceConf>| {
+        table.set("new_service", hclua::function1(move |conf: WrapObject<ServiceConf>| -> i64 {
             println!("close !!!!!!!!! ============ {:p}", service);
-            (*service).new_service(conf.0);
+            let mut conf = conf.0;
+            let session = (*service).node.next_seq() as i64;
+            conf.set_session(session);
+            (*service).new_service(conf);
+            session
         }));
         Some(table)
     }
