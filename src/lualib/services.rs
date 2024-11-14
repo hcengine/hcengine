@@ -34,6 +34,11 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             (*service).new_service(conf);
             session
         }));
+        
+        table.set("query_service", hclua::function1(move |name: String| -> Option<u32> {
+            (*service).query_service(&name)
+        }));
+        
         Some(table)
     }
 }

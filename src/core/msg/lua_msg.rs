@@ -9,6 +9,7 @@ pub struct LuaMsg {
     pub sender: u32,
     pub receiver: u32,
     pub sessionid: i64,
+    pub err: Option<String>,
     #[hclua_skip]
     pub data: BinaryMut,
 }

@@ -101,6 +101,7 @@ impl HcWorker {
                     sender: 0,
                     receiver: creator,
                     sessionid: session,
+                    err: Some(format!("存在相同的服务{}", conf.name)),
                     data,
                 }))
                 .await;
@@ -132,6 +133,7 @@ impl HcWorker {
                         sender: 0,
                         receiver: creator,
                         sessionid: session,
+                        err: None,
                         data,
                     }))
                     .await;
@@ -163,6 +165,7 @@ impl HcWorker {
                         sender: 0,
                         receiver: creator,
                         sessionid: session,
+                        err: None,
                         data,
                     }))
                     .await;

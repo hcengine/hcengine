@@ -1,4 +1,3 @@
-
 local core = require("hc.core")
 
 local co_create = coroutine.create
@@ -52,7 +51,9 @@ local function routine(fn, ...)
     end
 end
 
-hc.async = function(fn, ...) 
+hc.bootstrap_id = 1
+
+hc.async = function(fn, ...)
     local co = table.remove(co_pool) or co_create(routine)
     wrap_co_resume(co, fn, ...)
     return co
@@ -81,7 +82,7 @@ hc.wait = function(session, receiver)
             session_id_coroutine[session] = nil
         end
 
-        if c then 
+        if c then
             return table.unpack(c)
         else
             return a, b --- false, "BREAK"
@@ -125,8 +126,9 @@ hc.register_protocol({
     name = "integer",
     ty = hc.TY_INTEGER,
     pack = function(...) return ... end,
+    --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_i64()
+        return msg:read_i64(), msg:get_err()
     end,
     dispatch = function() end,
 })
@@ -135,8 +137,9 @@ hc.register_protocol({
     name = "number",
     ty = hc.TY_NUMBER,
     pack = function(...) return ... end,
+    --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_f64()
+        return msg:read_f64(), msg:get_err()
     end,
     dispatch = function() end,
 })
@@ -145,8 +148,9 @@ hc.register_protocol({
     name = "string",
     ty = hc.TY_STRING,
     pack = function(...) return ... end,
+    --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_str()
+        return msg:read_str(), msg:get_err()
     end,
     dispatch = function() end,
 })

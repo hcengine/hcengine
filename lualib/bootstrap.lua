@@ -22,10 +22,16 @@ hc.async(function()
         name = "test",
         source = "test",
     });
-    local id = hc.new_service(conf)
-    print("id === ", id)
-    local id2 = hc.new_service(conf)
-    print("id === ", id2)
+    local id, err = hc.new_service(conf)
+    print("id === ", id, err)
+    local id2, err = hc.new_service(conf)
+    print("id === ", id2, err)
+    local h3 = hc.query_service("test")
+    assert(id == h3, "id must equal")
+
+    
+    local h4 = hc.query_service("bootstrap")
+    assert(h4 == 1, "id must equal")
 end)
 print("ccccccccc")
 -- hc.close(0x01000001)

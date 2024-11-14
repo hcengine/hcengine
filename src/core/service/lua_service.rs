@@ -117,6 +117,10 @@ impl LuaService {
             let _ = sender.send(crate::HcMsg::NewService(conf)).await;
         });
     }
+    
+    pub fn query_service(&mut self, name: &String) -> Option<u32> {
+        self.node.query_service(&name)
+    }
 
     pub fn remove_self(service: *mut LuaService) {
         unsafe {

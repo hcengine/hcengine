@@ -28,3 +28,8 @@ end
 ---@return string
 function LuaMsg:read_str()
 end
+
+---@return string
+function LuaMsg:get_err()
+end
+
