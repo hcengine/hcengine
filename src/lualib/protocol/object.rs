@@ -26,8 +26,7 @@ impl ProtocolObject {
     extern "C" fn lua_unpack(lua: *mut lua_State) -> libc::c_int {
         let msg: Option<&mut LuaMsg> = LuaRead::lua_read(lua);
         if let Some(v) = msg {
-            let msg = ProtoLua::unpack_protocol(lua, v);
-            msg.push_to_lua(lua)
+            ProtoLua::unpack_protocol(lua, v).unwrap_or(0)
         } else {
             0
         }

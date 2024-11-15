@@ -52,7 +52,10 @@ local function routine(fn, ...)
 end
 
 hc.pack = Protocol.lua_pack
-hc.unpack = Protocol.lua_unpack
+--- @param msg LuaMsg
+hc.unpack = function(msg)
+    return table.unpack(Protocol.lua_unpack(msg))
+end
 
 hc.bootstrap_id = 1
 

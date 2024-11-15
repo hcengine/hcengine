@@ -10,4 +10,5 @@ Protocol.lua_pack = function(...) end
 
 --- 任意参数反序列化
 --- @param msg LuaMsg
+--- @return table
 Protocol.lua_unpack = function(msg) end
