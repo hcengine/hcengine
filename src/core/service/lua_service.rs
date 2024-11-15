@@ -2,7 +2,7 @@ use std::ptr;
 
 use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
 
-use crate::{luareg_hc_core, HcNodeState, HcWorkerState, LuaMsg};
+use crate::{luareg_hc_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject};
 
 use super::ServiceConf;
 
@@ -73,6 +73,8 @@ impl LuaService {
             luareg_hc_core(self.lua.state());
             ServiceConf::register(&mut self.lua);
             LuaMsg::register_all(&mut self.lua);
+            ProtocolObject::register_all(&mut self.lua);
+
             self.lua.add_path(false, "lualib".to_string());
             self.lua.add_path(false, "game".to_string());
 

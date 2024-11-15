@@ -33,6 +33,17 @@ hc.async(function()
     local h4 = hc.query_service("bootstrap")
     assert(h4 == 1, "id must equal")
 end)
-print("ccccccccc")
+
+for key, value in pairs(LuaMsg) do
+    print("LuaMsg ddddddddddd ", key, value)
+end
+for key, value in pairs(Protocol) do
+    print("Protocol ddddddddddd ", key, value)
+end
+print("aaaaaaaaaaaa", Protocol)
+print("aaaaaaaaaaaa", Protocol.lua_pack)
+local msg = hc.pack(1, 2, "aa", {ff = "11"})
+local a, b, c, d = hc.unpack(msg);
+print("ccccccccc", a, b, c, d)
 -- hc.close(0x01000001)
 -- hc.exit(0)

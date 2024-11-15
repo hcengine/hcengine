@@ -2,9 +2,11 @@ use std::str;
 use hclua::{self, lua_State, LuaRead};
 use hcproto::Value;
 use std::collections::HashMap;
-pub struct NetUtils;
 
-impl NetUtils {
+use crate::LuaUtils;
+pub struct SerUtils;
+
+impl SerUtils {
     pub fn lua_read_value(lua: *mut lua_State,
                           index: i32, stack: u32)
                           -> Option<Value> {
@@ -55,7 +57,7 @@ impl NetUtils {
                                 index
                             };
                             hclua::lua_gettable(lua, new_index);
-                            let sub_val = NetUtils::lua_read_value(lua,
+                            let sub_val = SerUtils::lua_read_value(lua,
                                                                     -1, stack + 1);
                             if sub_val.is_none() {
                                 return None;
@@ -74,7 +76,7 @@ impl NetUtils {
                         };
 
                         while hclua::lua_istable(lua, t) && hclua::lua_next(lua, t) != 0 {
-                            let sub_val = unwrap_or!(NetUtils::lua_read_value(lua, -1, stack + 1), return None);
+                            let sub_val = unwrap_or!(SerUtils::lua_read_value(lua, -1, stack + 1), return None);
                             let value = if hclua::lua_isnumber(lua, -2) != 0 {
                                 let idx: u32 = unwrap_or!(LuaRead::lua_read_at_position(lua, -2),
                                 return None);
@@ -102,7 +104,7 @@ impl NetUtils {
         let size = unsafe { hclua::lua_gettop(lua) - index + 1 };
         let mut val: Vec<Value> = Vec::new();
         for i in 0..size {
-            let sub_val = NetUtils::lua_read_value(lua,
+            let sub_val = SerUtils::lua_read_value(lua,
                                                    i + index, 0);
             if sub_val.is_none() {
                 return None;

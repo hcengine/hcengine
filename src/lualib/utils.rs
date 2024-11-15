@@ -2,7 +2,7 @@ use std::ptr;
 
 use hclua::lua_State;
 
-struct LuaUtils;
+pub struct LuaUtils;
 impl LuaUtils {
     pub fn read_str_to_vec(lua: *mut lua_State, index: i32) -> Option<Vec<u8>> {
         let mut size: libc::size_t = 0;

@@ -51,6 +51,9 @@ local function routine(fn, ...)
     end
 end
 
+hc.pack = Protocol.lua_pack
+hc.unpack = Protocol.lua_unpack
+
 hc.bootstrap_id = 1
 
 hc.async = function(fn, ...)

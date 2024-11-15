@@ -1,8 +1,10 @@
 
 mod services;
-mod ser_utils;
 mod ser;
 mod utils;
+mod protocol;
 
 
 pub use services::luareg_hc_core;
+pub use utils::LuaUtils;
+pub use protocol::*;
