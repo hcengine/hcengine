@@ -8,7 +8,7 @@ use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
-    core::{msg::LuaMsg, HcMsg},
+    core::{msg::{HcOper, LuaMsg}, HcMsg},
     Config, HcNodeState, LuaService, ServiceConf, ServiceWrapper,
 };
 
@@ -43,17 +43,22 @@ impl HcWorker {
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
         match msg {
             HcMsg::Msg(message) => todo!(),
-            HcMsg::NewService(conf) => self.new_service(conf).await,
-            HcMsg::CloseService(v) => {
-                if v == Config::BOOTSTRAP_ADDR {
-                    let _ = self.node_state.sender.send(HcMsg::Stop(0)).await;
-                    return Ok(());
-                }
-                if let Some(service) = self.services.remove(&v) {
-                    unsafe {
-                        (*service.0).set_ok(false);
-                        LuaService::remove_self(service.0);
-                    };
+            HcMsg::Oper(oper) => {
+                match oper {
+                    HcOper::NewService(conf) => self.new_service(conf).await,
+                    HcOper::CloseService(v) => {
+                        if v == Config::BOOTSTRAP_ADDR {
+                            let _ = self.node_state.sender.send(HcMsg::stop(0)).await;
+                            return Ok(());
+                        }
+                        if let Some(service) = self.services.remove(&v) {
+                            unsafe {
+                                (*service.0).set_ok(false);
+                                LuaService::remove_self(service.0);
+                            };
+                        }
+                    }
+                    _ => {todo!()}
                 }
             }
             HcMsg::CallMsg(msg) => {
@@ -149,7 +154,7 @@ impl HcWorker {
             unsafe {
                 if !(*service).init() {
                     if service_id == Config::BOOTSTRAP_ADDR {
-                        let _ = self.node_state.sender.send(HcMsg::Stop(-1)).await;
+                        let _ = self.node_state.sender.send(HcMsg::oper(HcOper::Stop(-1))).await;
                     }
                     return;
                 }

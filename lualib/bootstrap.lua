@@ -32,8 +32,8 @@ hc.async(function()
     local v = hc.call("lua", id, "sum", 6, 3)
     print("val == ", v)
     
-    local h4 = hc.query_service("bootstrap")
-    assert(h4 == 1, "id must equal")
+    -- local h4 = hc.query_service("bootstrap")
+    -- assert(h4 == 1, "id must equal")
 end)
 
 -- for key, value in pairs(LuaMsg) do

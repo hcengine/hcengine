@@ -21,7 +21,7 @@ async fn main() {
 
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(100)).await;
-        let _ = state.sender.send(hcengine::HcMsg::Stop(-1)).await;
+        let _ = state.sender.send(hcengine::HcMsg::stop(-1)).await;
     });
     node.new_service(conf).await;
     let _ = node.run().await;

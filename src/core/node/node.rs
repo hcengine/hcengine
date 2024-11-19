@@ -2,6 +2,7 @@ use std::{i32, io, time::Duration, usize};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Receiver};
 
+use crate::core::msg::HcOper;
 use crate::core::worker;
 use crate::{Config, HcMsg, HcStatusState, HcWorker, HcWorkerState, LuaMsg, ServiceConf};
 
@@ -88,19 +89,25 @@ impl HcNode {
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
         match msg {
             HcMsg::Msg(message) => todo!(),
-            HcMsg::NewService(service_conf) => {
-                self.new_service(service_conf).await;
-            },
-            HcMsg::Stop(v) => self.exitcode = v,
-            HcMsg::CloseService(service_id) => {
-                let woker_id = Config::get_workid(service_id);
-                if woker_id >= self.senders.len() {
-                    return Ok(());
+            HcMsg::Oper(oper) => {
+                match oper {
+                    HcOper::NewService(service_conf) => {
+                        self.new_service(service_conf).await;
+                    },
+                    HcOper::Stop(v) => self.exitcode = v,
+                    HcOper::CloseService(ref service_id) => {
+                        let woker_id = Config::get_workid(*service_id);
+                        if woker_id >= self.senders.len() {
+                            return Ok(());
+                        }
+
+                        let sender = &mut self.senders[woker_id];
+                        let _ = sender.sender.send(HcMsg::oper(oper)).await;
+                    }
+                    _ => {
+                        todo!()
+                    }
                 }
-
-                let sender = &mut self.senders[woker_id];
-                let _ = sender.sender.send(msg).await;
-
             }
             HcMsg::CallMsg(msg) => {
                 self.call_msg(msg).await;
@@ -149,7 +156,7 @@ impl HcNode {
         } else {
             self.next_worker()
         };
-        let _ = worker.sender.send(HcMsg::NewService(conf)).await;
+        let _ = worker.sender.send(HcMsg::oper(HcOper::NewService(conf))).await;
     }
 
     pub fn get_worker(&mut self, threadid: usize) -> Option<&mut HcWorkerState> {

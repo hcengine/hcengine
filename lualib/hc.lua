@@ -32,8 +32,6 @@ end
 ---@class hc : core
 local hc = core
 
-
-
 local co_num = 0
 
 local co_pool = setmetatable({}, { __mode = "kv" })
@@ -56,7 +54,7 @@ end
 hc.pack = Protocol.lua_pack
 --- @param msg LuaMsg
 hc.unpack = function(msg)
-    return table.unpack(Protocol.lua_unpack(msg))
+    return Protocol.lua_unpack(msg)
 end
 
 hc.bootstrap_id = 1
@@ -67,15 +65,18 @@ hc.async = function(fn, ...)
     return co
 end
 
+hc.co_resume = wrap_co_resume
+
 ---@return integer | boolean, string
 hc.wait = function(session, receiver)
+    print("wait session = ", session)
     if session then
         session_id_coroutine[session] = co_running()
         if receiver then
             session_watcher[session] = receiver
         end
     else
-        if type(receiver) == "string" then -- receiver is error message
+        if type(receiver) ~= "number" then -- receiver is error message
             return false, receiver
         end
     end
@@ -84,8 +85,21 @@ hc.wait = function(session, receiver)
     local a, b, c = co_yield()
     print("xxx ", a, b, c)
     if a then
-        -- LuaMsg
-        return protocol[a.ty].unpack(a)
+        local proto = protocol[a.ty]
+        if not proto then
+            return false, "unknow proto"
+        end
+        local ret = proto.unpack(a)
+        if proto.auto_unpack then
+            if type(ret) ~= "table" then
+                return false, "proto error"
+            end
+            -- LuaMsg
+            return table.unpack(ret)
+        else
+            -- LuaMsg
+            return ret, receiver
+        end
     else
         -- false, "BREAK", {...}
         if session then
@@ -114,6 +128,7 @@ hc.call = function(ty, receiver, ...)
     print("zzzzzzzzzzzzzzz")
     ---@type LuaMsg
     local msg = p.pack(...)
+    msg.sender = hc.id
     msg.receiver = receiver
     print("2222222222222")
     return hc.wait(_send(msg))
@@ -135,7 +150,7 @@ hc.response = function(ty, receiver, sessionid, ...)
     local msg = p.pack(...)
     msg.receiver = receiver
     msg.sessionid = sessionid
-    return hc.wait(_resp(msg))
+    return _resp(msg)
 end
 
 ---@param ty string
@@ -197,11 +212,16 @@ end
 --- @param msg LuaMsg
 local function _wrap_lua_msg_dispath(msg)
     print("msg ============ ", msg)
-    local ret = hc.unpack(msg) or {}
+    local ret = hc.unpack(msg)
+    if type(ret) ~= "table" then
+        print("未知的lua协议类型, 必须为数组")
+        return
+    end
     print("msg ============ ret ", ret)
-    local name, value = table.unpack(ret)
+    local name = table.remove(ret, 1)
+    -- local name, value = table.unpack(ret)
     print("msg ============ zzzzzzzzzzzzzzzzzz ", msg)
-    if type(name) ~= "string" or type(value) ~= "table" then
+    if type(name) ~= "string" then
         print("未知的协议消息或者协议参数")
         return
     end
@@ -216,9 +236,9 @@ local function _wrap_lua_msg_dispath(msg)
 
     print("_wrap_lua_msg_dispath ============ ", sender, session)
     if session ~= 0 and sender ~= 0 then
-        hc.response(msg.ty, sender, session, func(sender, session, table.unpack(value)))
+        hc.response(msg.ty, sender, session, func(table.unpack(ret)))
     else
-        func(sender, session, table.unpack(value))
+        func(table.unpack(ret))
     end
 end
 
@@ -256,6 +276,7 @@ hc.TY_STRING = 3;
 hc.TY_LUA = 4;
 hc.TY_LUA_MSG = 5;
 hc.TY_NET = 6;
+hc.TY_TIMER = 7;
 
 hc.register_protocol = function(t)
     local ty = t.ty
@@ -269,6 +290,7 @@ end
 hc.register_protocol({
     name = "lua",
     ty = hc.TY_LUA,
+    auto_unpack = true,
     pack = hc.pack,
     unpack = hc.unpack,
     dispatch = function() end,
@@ -277,6 +299,7 @@ hc.register_protocol({
 hc.register_protocol({
     name = "lua_msg",
     ty = hc.TY_LUA_MSG,
+    auto_unpack = true,
     pack = hc.pack,
     unpack = hc.unpack,
     dispatch = _lua_msg_dispath,

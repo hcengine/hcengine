@@ -32,6 +32,7 @@ impl ProtoLua {
         println!("buffer = {:?}", msg.data.chunk());
         let mut buffer = Buffer::new_with(&mut msg.data);
         if let Ok(val) = hcproto::decode_msg(&mut buffer) {
+            println!("ret val = {:?}", val);
             LuaWrapperTableValue(val).push_to_lua(lua);
             return Some(1);
         } else {
