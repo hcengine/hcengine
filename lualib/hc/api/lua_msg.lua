@@ -29,6 +29,26 @@ end
 function LuaMsg:read_str()
 end
 
+---@param val integer
+function LuaMsg:write_u64(val)
+end
+
+---@param val integer
+function LuaMsg:write_i64(val)
+end
+
+---@param val number
+function LuaMsg:write_f32(val)
+end
+
+---@param val number
+function LuaMsg:write_f64(val)
+end
+
+---@param val string
+function LuaMsg:write_str(val)
+end
+
 ---@return string
 function LuaMsg:get_err()
 end

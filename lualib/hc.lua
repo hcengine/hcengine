@@ -10,6 +10,8 @@ if not co_close then
 end
 
 local _newservice = core.new_service
+local _send = core.send
+local _resp = core.resp
 
 local session_id_coroutine = {}
 local protocol = {}
@@ -65,6 +67,7 @@ hc.async = function(fn, ...)
     return co
 end
 
+---@return integer | boolean, string
 hc.wait = function(session, receiver)
     if session then
         session_id_coroutine[session] = co_running()
@@ -77,6 +80,7 @@ hc.wait = function(session, receiver)
         end
     end
 
+    print("hc.wait ", session, receiver)
     local a, b, c = co_yield()
     print("xxx ", a, b, c)
     if a then
@@ -96,78 +100,59 @@ hc.wait = function(session, receiver)
     end
 end
 
----@param conf ServiceConf
-hc.new_service = function(conf)
-    return hc.wait(_newservice(conf))
-end
-
----------------------------------------------
-------protocol message ----------------------
-
-hc.TY_UNKNOWN = 0;
-hc.TY_INTEGER = 1;
-hc.TY_NUMBER = 2;
-hc.TY_STRING = 3;
-hc.TY_LUA = 4;
-
-
-hc.register_protocol = function(t)
-    local ty = t.ty
-    if protocol[ty] then
-        print("重复注册协议:", ty)
+---@param ty integer | string msg type
+---@param receiver integer service_id
+---@return ...
+hc.call = function(ty, receiver, ...)
+    local p = protocol[ty]
+    if not p then
+        error(string.format("未知的协议类型:%s", ty))
     end
-    protocol[ty] = t
-    protocol[t.name] = t
+    if receiver == 0 then
+        error("call receiver == 0")
+    end
+    print("zzzzzzzzzzzzzzz")
+    ---@type LuaMsg
+    local msg = p.pack(...)
+    msg.receiver = receiver
+    print("2222222222222")
+    return hc.wait(_send(msg))
 end
 
-hc.register_protocol({
-    name = "lua",
-    ty = hc.TY_LUA,
-    pack = function() end,
-    unpack = function() end,
-    dispatch = function() end,
-})
 
-hc.register_protocol({
-    name = "integer",
-    ty = hc.TY_INTEGER,
-    pack = function(...) return ... end,
-    --- @param msg LuaMsg
-    unpack = function(msg)
-        return msg:read_i64(), msg:get_err()
-    end,
-    dispatch = function() end,
-})
+---@param ty integer msg type
+---@param receiver integer service_id
+---@return ...
+hc.response = function(ty, receiver, sessionid, ...)
+    local p = protocol[ty]
+    if not p then
+        error(string.format("未知的协议类型:%s", ty))
+    end
+    if receiver == 0 then
+        error("call receiver == 0")
+    end
+    ---@type LuaMsg
+    local msg = p.pack(...)
+    msg.receiver = receiver
+    msg.sessionid = sessionid
+    return hc.wait(_resp(msg))
+end
 
-hc.register_protocol({
-    name = "number",
-    ty = hc.TY_NUMBER,
-    pack = function(...) return ... end,
-    --- @param msg LuaMsg
-    unpack = function(msg)
-        return msg:read_f64(), msg:get_err()
-    end,
-    dispatch = function() end,
-})
+---@param ty string
+---@param fn fun(msg: LuaMsg)
+hc.dispatch = function(ty, fn)
+    local p = protocol[ty]
+    if fn then
+        p.dispatch = fn
+    end
+end
 
-hc.register_protocol({
-    name = "string",
-    ty = hc.TY_STRING,
-    pack = function(...) return ... end,
-    --- @param msg LuaMsg
-    unpack = function(msg)
-        return msg:read_str(), msg:get_err()
-    end,
-    dispatch = function() end,
-})
-------protocol message ----------------------
----------------------------------------------
 
 ---@param msg LuaMsg
-local function _wrap_dispath(msg)
+local function _wrap_response(msg)
     local p = protocol[msg.ty]
     if not p then
-        error(string.format("handle unknown ptype: %s. sender %u", msg.ty, msg.sender))
+        error(string.format("handle unknown ty: %s. sender %u", msg.ty, msg.sender))
     end
 
     local session = msg.sessionid
@@ -186,14 +171,14 @@ local function _wrap_dispath(msg)
     else
         local dispatch = p.dispatch
         if not dispatch then
-            error(string.format("[%s] dispatch ptype [%u] is nil", hc.name, p.ptype))
+            error(string.format("[%s] dispatch ty [%u] is nil", hc.name, p.ty))
             return
         end
 
         if not p.israw then
             local co = table.remove(co_pool) or co_create(routine)
             if not p.unpack then
-                error(string.format("ptype %s has no unpack function.", p.ptype))
+                error(string.format("ty %s has no unpack function.", p.ty))
             end
             wrap_co_resume(co, dispatch, msg)
         else
@@ -203,8 +188,42 @@ local function _wrap_dispath(msg)
 end
 
 ---@param msg LuaMsg
-local function _dispath(msg)
-    _wrap_dispath(msg)
+local function _response(msg)
+    _wrap_response(msg)
+    LuaMsg.del(msg)
+end
+
+--- comment
+--- @param msg LuaMsg
+local function _wrap_lua_msg_dispath(msg)
+    print("msg ============ ", msg)
+    local ret = hc.unpack(msg) or {}
+    print("msg ============ ret ", ret)
+    local name, value = table.unpack(ret)
+    print("msg ============ zzzzzzzzzzzzzzzzzz ", msg)
+    if type(name) ~= "string" or type(value) ~= "table" then
+        print("未知的协议消息或者协议参数")
+        return
+    end
+    local func = _G[name]
+    if type(func) ~= "function" then
+        print(string.format("未找到函数:%s,无法处理消息", name))
+        return
+    end
+
+    local sender = msg.sender
+    local session = msg.sessionid
+
+    print("_wrap_lua_msg_dispath ============ ", sender, session)
+    if session ~= 0 and sender ~= 0 then
+        hc.response(msg.ty, sender, session, func(sender, session, table.unpack(value)))
+    else
+        func(sender, session, table.unpack(value))
+    end
+end
+
+local function _lua_msg_dispath(msg)
+    _wrap_lua_msg_dispath(msg)
     LuaMsg.del(msg)
 end
 
@@ -214,9 +233,113 @@ local function _stop_world()
 end
 
 --- 消息分配器
-_G["hc_msg_dispath"] = _dispath
+_G["hc_msg_call"] = _lua_msg_dispath
+_G["hc_msg_resp"] = _response
 _G["stop_world"] = _stop_world
 
 print("cccccccccccc?????")
+
+
+---@param conf ServiceConf
+---@return integer, string
+hc.new_service = function(conf)
+    return hc.wait(_newservice(conf))
+end
+
+---------------------------------------------
+------protocol message ----------------------
+
+hc.TY_UNKNOWN = 0;
+hc.TY_INTEGER = 1;
+hc.TY_NUMBER = 2;
+hc.TY_STRING = 3;
+hc.TY_LUA = 4;
+hc.TY_LUA_MSG = 5;
+hc.TY_NET = 6;
+
+hc.register_protocol = function(t)
+    local ty = t.ty
+    if protocol[ty] then
+        print("重复注册协议:", ty)
+    end
+    protocol[ty] = t
+    protocol[t.name] = t
+end
+
+hc.register_protocol({
+    name = "lua",
+    ty = hc.TY_LUA,
+    pack = hc.pack,
+    unpack = hc.unpack,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "lua_msg",
+    ty = hc.TY_LUA_MSG,
+    pack = hc.pack,
+    unpack = hc.unpack,
+    dispatch = _lua_msg_dispath,
+})
+
+hc.register_protocol({
+    name = "net",
+    ty = hc.TY_NET,
+    pack = hc.pack,
+    unpack = hc.unpack,
+    dispatch = function() end,
+})
+
+
+hc.register_protocol({
+    name = "integer",
+    ty = hc.TY_INTEGER,
+    pack = function(val)
+        local msg = LuaMsg.new()
+        msg.ty = hc.TY_INTEGER
+        msg:write_u64(val)
+        return msg
+    end,
+    --- @param msg LuaMsg
+    unpack = function(msg)
+        return msg:read_i64(), msg:get_err()
+    end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "number",
+    ty = hc.TY_NUMBER,
+    pack = function(val)
+        local msg = LuaMsg.new()
+        msg.ty = hc.TY_NUMBER
+        msg:write_f32(val)
+        return msg
+    end,
+    --- @param msg LuaMsg
+    unpack = function(msg)
+        return msg:read_f64(), msg:get_err()
+    end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "string",
+    ty = hc.TY_STRING,
+    pack = function(val) 
+        local msg = LuaMsg.new()
+        msg.ty = hc.TY_STRING
+        msg:write_str(val)
+        return msg
+    end,
+    --- @param msg LuaMsg
+    unpack = function(msg)
+        return msg:read_str(), msg:get_err()
+    end,
+    dispatch = function() end,
+})
+------protocol message ----------------------
+---------------------------------------------
+
 
 return hc;

@@ -8,5 +8,6 @@ pub enum HcMsg {
     NewService(ServiceConf),
     Stop(i32),
     CloseService(u32),
-    Response(LuaMsg),
+    CallMsg(LuaMsg),
+    RespMsg(LuaMsg),
 }

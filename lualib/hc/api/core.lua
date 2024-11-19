@@ -24,4 +24,11 @@ function core.new_service(conf) end
 --- @return integer
 function core.query_service(name) end
 
+--- call
+--- @param msg LuaMsg 消息
+function core.send(msg) end
+
+--- 返回消息
+--- @param msg LuaMsg 消息
+function core.resp(msg) end
 return core

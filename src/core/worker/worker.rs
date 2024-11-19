@@ -56,8 +56,11 @@ impl HcWorker {
                     };
                 }
             }
-            HcMsg::Response(msg) => {
-                self.response(msg).await;
+            HcMsg::CallMsg(msg) => {
+                self.call_msg(msg).await;
+            }
+            HcMsg::RespMsg(msg) => {
+                self.resp_msg(msg).await;
             }
             _ => todo!(),
         }
@@ -96,7 +99,7 @@ impl HcWorker {
             let _ = self
                 .node_state
                 .sender
-                .send(HcMsg::Response(LuaMsg {
+                .send(HcMsg::RespMsg(LuaMsg {
                     ty: Config::TY_INTEGER,
                     sender: 0,
                     receiver: creator,
@@ -128,7 +131,7 @@ impl HcWorker {
                 let _ = self
                     .node_state
                     .sender
-                    .send(HcMsg::Response(LuaMsg {
+                    .send(HcMsg::RespMsg(LuaMsg {
                         ty: Config::TY_INTEGER,
                         sender: 0,
                         receiver: creator,
@@ -160,7 +163,7 @@ impl HcWorker {
                 let _ = self
                     .node_state
                     .sender
-                    .send(HcMsg::Response(LuaMsg {
+                    .send(HcMsg::RespMsg(LuaMsg {
                         ty: Config::TY_INTEGER,
                         sender: 0,
                         receiver: creator,
@@ -178,12 +181,26 @@ impl HcWorker {
     }
 
     
-    pub async fn response(&mut self, msg: LuaMsg) {
+    pub async fn call_msg(&mut self, msg: LuaMsg) {
+        for id in &self.services {
+            println!("id === {:?}", id.0);
+        }
+        if let Some(service) = self.services.get_mut(&msg.receiver) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).call_msg(msg).await;
+                }
+            }
+        }
+    }
+
+    
+    pub async fn resp_msg(&mut self, msg: LuaMsg) {
         let service_id = Config::get_service_id(msg.receiver);
         if let Some(service) = self.services.get_mut(&service_id) {
             unsafe {
                 if (*service.0).is_ok() {
-                    (*service.0).response(msg).await;
+                    (*service.0).resp_msg(msg).await;
                 }
             }
         }

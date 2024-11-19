@@ -102,8 +102,11 @@ impl HcNode {
                 let _ = sender.sender.send(msg).await;
 
             }
-            HcMsg::Response(msg) => {
-                self.response(msg).await;
+            HcMsg::CallMsg(msg) => {
+                self.call_msg(msg).await;
+            }
+            HcMsg::RespMsg(msg) => {
+                self.resp_msg(msg).await;
             }
             _ => todo!(),
         }
@@ -126,10 +129,17 @@ impl HcNode {
         r
     }
 
-    pub async fn response(&mut self, msg: LuaMsg) {
+    pub async fn call_msg(&mut self, msg: LuaMsg) {
         let worker_id = Config::get_workid(msg.receiver);
         if let Some(worker) = self.get_worker(worker_id) {
-            let _ = worker.sender.send(HcMsg::Response(msg)).await;
+            let _ = worker.sender.send(HcMsg::CallMsg(msg)).await;
+        }
+    }
+
+    pub async fn resp_msg(&mut self, msg: LuaMsg) {
+        let worker_id = Config::get_workid(msg.receiver);
+        if let Some(worker) = self.get_worker(worker_id) {
+            let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
         }
     }
 
