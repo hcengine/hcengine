@@ -3,16 +3,9 @@ use hcnet::Message;
 
 use crate::{LuaMsg, ServiceConf, TimerNode};
 
-pub struct AddTimer {
-    service_id: u32,
-    timer_id: u32,
-    interval: u32,
-    repeat: bool,
-}
-
 pub enum HcOper {
-    /// service_id, timer_id, interval:ms, repeat
-    AddTimer(TimerNode),
+    /// timer_id, TimerNode
+    AddTimer(u64, TimerNode),
     DelTimer(u64),
     TickTimer(u32, u64, bool),
     NewService(ServiceConf),
@@ -48,9 +41,9 @@ impl HcMsg {
         HcMsg::Oper(HcOper::CloseService(id))
     }
 
-    /// service_id, timer_id, interval:ms, repeat
-    pub fn add_timer(node: TimerNode) -> Self {
-        HcMsg::Oper(HcOper::AddTimer(node))
+    /// timer_id, TimerNode
+    pub fn add_timer(timer_id: u64, node: TimerNode) -> Self {
+        HcMsg::Oper(HcOper::AddTimer(timer_id, node))
     }
 
     /// timer_id

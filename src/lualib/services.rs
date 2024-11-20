@@ -75,9 +75,10 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             }),
         );
         
+        /// repeat 强制拉到另一段函数中
         table.set(
             "timeout",
-            hclua::function1(move |inteval: u64| -> u64 {
+            hclua::function2(move |timer_id: u32, inteval: u64| -> u64 {
                 // let sender = (*service).node.sender.clone();
                 // let msg = Box::from_raw(msg);
                 // tokio::spawn(async move {
