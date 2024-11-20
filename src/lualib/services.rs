@@ -74,6 +74,18 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 });
             }),
         );
+        
+        table.set(
+            "timeout",
+            hclua::function1(move |inteval: u64| -> u64 {
+                // let sender = (*service).node.sender.clone();
+                // let msg = Box::from_raw(msg);
+                // tokio::spawn(async move {
+                //     let _ = sender.send(crate::HcMsg::RespMsg(*msg)).await;
+                // });
+                0
+            }),
+        );
         Some(table)
     }
 }

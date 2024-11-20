@@ -9,6 +9,10 @@ error("辅助编译器解读")
 ---@field public get_ty fun(self: LuaMsg): integer
 LuaMsg = { }
 
+---@return boolean
+function LuaMsg:read_bool()
+end
+
 ---@return integer
 function LuaMsg:read_u64()
 end
@@ -27,6 +31,10 @@ end
 
 ---@return string
 function LuaMsg:read_str()
+end
+
+---@param val boolean
+function LuaMsg:write_bool(val)
 end
 
 ---@param val integer

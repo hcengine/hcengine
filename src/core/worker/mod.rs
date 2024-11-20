@@ -1,6 +1,5 @@
 
 mod worker_state;
-mod worker_mgr;
 mod worker;
 
 pub use worker::HcWorker;

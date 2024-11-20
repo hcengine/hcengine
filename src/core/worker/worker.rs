@@ -58,6 +58,15 @@ impl HcWorker {
                             };
                         }
                     }
+                    HcOper::TickTimer(service_id, timer_id, _) => {
+                        if let Some(service) = self.services.get(&service_id) {
+                            unsafe {
+                                if (*service.0).is_ok() {
+                                    (*service.0).tick_timer(timer_id);
+                                }
+                            };
+                        }
+                    }
                     _ => {todo!()}
                 }
             }
@@ -193,7 +202,7 @@ impl HcWorker {
         if let Some(service) = self.services.get_mut(&msg.receiver) {
             unsafe {
                 if (*service.0).is_ok() {
-                    (*service.0).call_msg(msg).await;
+                    (*service.0).call_msg(msg);
                 }
             }
         }
@@ -205,7 +214,7 @@ impl HcWorker {
         if let Some(service) = self.services.get_mut(&service_id) {
             unsafe {
                 if (*service.0).is_ok() {
-                    (*service.0).resp_msg(msg).await;
+                    (*service.0).resp_msg(msg);
                 }
             }
         }

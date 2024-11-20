@@ -28,17 +28,27 @@ impl LuaMsg {
 
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
+        LuaObject::<LuaMsg>::object_def(lua, "read_bool", hclua::function1(Self::read_bool));
         LuaObject::<LuaMsg>::object_def(lua, "read_u64", hclua::function1(Self::read_u64));
         LuaObject::<LuaMsg>::object_def(lua, "read_i64", hclua::function1(Self::read_i64));
         LuaObject::<LuaMsg>::object_def(lua, "read_f32", hclua::function1(Self::read_f32));
         LuaObject::<LuaMsg>::object_def(lua, "read_f64", hclua::function1(Self::read_f64));
         LuaObject::<LuaMsg>::object_def(lua, "read_str", hclua::function1(Self::read_str));
-
+        
+        LuaObject::<LuaMsg>::object_def(lua, "write_bool", hclua::function2(Self::write_bool));
         LuaObject::<LuaMsg>::object_def(lua, "write_u64", hclua::function2(Self::write_u64));
         LuaObject::<LuaMsg>::object_def(lua, "write_i64", hclua::function2(Self::write_i64));
         LuaObject::<LuaMsg>::object_def(lua, "write_f32", hclua::function2(Self::write_f32));
         LuaObject::<LuaMsg>::object_def(lua, "write_f64", hclua::function2(Self::write_f64));
         LuaObject::<LuaMsg>::object_def(lua, "write_str", hclua::function2(Self::write_str));
+    }
+    
+    pub fn write_bool(&mut self, val: bool) {
+        self.data.put_bool(val);
+    }
+
+    pub fn read_bool(&mut self) -> Option<bool> {
+        self.data.try_get_bool().ok()
     }
     
     pub fn write_u64(&mut self, val: u64) {

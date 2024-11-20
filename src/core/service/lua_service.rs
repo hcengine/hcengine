@@ -132,13 +132,18 @@ impl LuaService {
         }
     }
 
-    pub async fn call_msg(&mut self, msg: LuaMsg) {
+    pub fn call_msg(&mut self, msg: LuaMsg) {
         println!("lua service call_msg ================ {:?}", msg.data);
         let _: Option<()> = self.lua.read_func1("hc_msg_call", msg);
     }
 
-    pub async fn resp_msg(&mut self, msg: LuaMsg) {
+    pub fn resp_msg(&mut self, msg: LuaMsg) {
         println!("lua service resp_msg ================");
         let _: Option<()> = self.lua.read_func1("hc_msg_resp", msg);
+    }
+    
+    pub fn tick_timer(&mut self, timer_id: u64) {
+        println!("lua service resp_msg ================");
+        let _: Option<()> = self.lua.read_func1("hc_msg_resp", timer_id);
     }
 }
