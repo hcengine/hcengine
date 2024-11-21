@@ -31,4 +31,15 @@ function core.send(msg) end
 --- 返回消息
 --- @param msg LuaMsg 消息
 function core.resp(msg) end
+
+--- 超时消息
+--- @param interval integer
+--- @param is_repeat boolean
+--- @return integer
+function core.timeout(interval, is_repeat) end
+
+--- 超时消息
+--- @param timer_id integer
+function core.del_timer(timer_id) end
+
 return core

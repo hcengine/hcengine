@@ -56,7 +56,8 @@ impl HcNode {
 
     async fn inner_run(&mut self) -> io::Result<i32> {
         let mut stop_once = false;
-        loop {
+        let mut recvs = vec![];
+        'outer: loop {
             if self.exitcode <= 0 {
                 break;
             }
@@ -80,13 +81,19 @@ impl HcNode {
                     break;
                 }
             }
-            tokio::select! {
-                _ = tokio::time::sleep(Duration::from_millis(1)) => {continue}
-                v = self.recv.recv() => {
-                    if v.is_none() {
+            loop {
+                tokio::select! {
+                    _ = tokio::time::sleep(Duration::from_millis(1)) => {
                         break;
                     }
-                    self.deal_msg(v.unwrap()).await?;
+                    v = self.recv.recv_many(&mut recvs, 100) => {
+                        if v == 0 {
+                            break 'outer;
+                        }
+                        for val in recvs.drain(0..v) {
+                            self.deal_msg(val).await?;
+                        }
+                    }
                 }
             }
 
@@ -102,6 +109,7 @@ impl HcNode {
                 });
 
             if results.len() > 0 {
+                println!("timer not empty!!!!");
                 self.tick_timer(results).await;
             }
         }
@@ -129,8 +137,8 @@ impl HcNode {
                     let sender = &mut self.senders[woker_id];
                     let _ = sender.sender.send(HcMsg::oper(oper)).await;
                 }
-                HcOper::AddTimer(node) => {
-                    self.timer.add_timer(node);
+                HcOper::AddTimer(timer_id, node) => {
+                    self.timer.add_timer_by_id(timer_id, node);
                 }
                 HcOper::DelTimer(id) => {
                     self.timer.del_timer(id);
@@ -222,14 +230,17 @@ impl HcNode {
                         let mut data = BinaryMut::new();
                         data.put_u64(timer_id);
                         data.put_bool(is_repeat);
-                        let _ = worker.sender.send(HcMsg::CallMsg(LuaMsg {
-                            ty: Config::TY_TIMER,
-                            sender: 0,
-                            receiver: service_id,
-                            err: None,
-                            sessionid: 0,
-                            data,
-                        })).await;
+                        let _ = worker
+                            .sender
+                            .send(HcMsg::RespMsg(LuaMsg {
+                                ty: Config::TY_TIMER,
+                                sender: 0,
+                                receiver: service_id,
+                                err: None,
+                                sessionid: 0,
+                                data,
+                            }))
+                            .await;
                     }
                 }
                 _ => unreachable!(),

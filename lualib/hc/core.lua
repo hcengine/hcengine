@@ -1,4 +1,4 @@
-local core = require("hc.core")
+local core = require("engine.core")
 
 local co_create = coroutine.create
 local co_running = coroutine.running
@@ -12,6 +12,7 @@ end
 local _newservice = core.new_service
 local _send = core.send
 local _resp = core.resp
+local _timeout = core.timeout
 
 local session_id_coroutine = {}
 local protocol = {}
@@ -56,6 +57,7 @@ hc.pack = Protocol.lua_pack
 hc.unpack = function(msg)
     return Protocol.lua_unpack(msg)
 end
+
 
 hc.bootstrap_id = 1
 
@@ -364,36 +366,4 @@ hc.register_protocol({
 ------protocol message ----------------------
 ---------------------------------------------
 
----------------------------------------------
-------timer oper       ----------------------
----------------------------------------------
-
-local timer_map = {}
-
-hc.register_protocol({
-    name = "timer",
-    ty = hc.TY_TIMER,
-    israw = true,
-    ---@param msg LuaMsg
-    dispatch = function(msg)
-        local timerid = msg:read_i64()
-        local is_repeat = msg:read_bool()
-        local v = timer_map[timerid]
-        if not is_repeat then
-            timer_map[timerid] = nil
-        end
-        if not v then
-            return
-        end
-        if type(v) == "thread" then
-            hc.co_resume(v, timerid)
-        else
-            v()
-        end
-    end,
-})
-
----------------------------------------------
-------timer oper       ----------------------
----------------------------------------------
 return hc;

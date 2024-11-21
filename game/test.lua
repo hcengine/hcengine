@@ -1,4 +1,4 @@
-local hc = require("hc")
+local hc = require("lualib.hc")
 
 
 function sum(s, e)

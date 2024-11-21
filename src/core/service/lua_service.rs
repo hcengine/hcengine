@@ -2,7 +2,7 @@ use std::ptr;
 
 use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
 
-use crate::{core::msg::HcOper, luareg_hc_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject};
+use crate::{core::msg::HcOper, luareg_engine_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject};
 
 use super::ServiceConf;
 
@@ -70,7 +70,7 @@ impl LuaService {
             let service = self as *mut LuaService;
             println!("aaa ============ {:p}", service);
             Lua::copy_to_extraspace(self.lua.state(), service);
-            luareg_hc_core(self.lua.state());
+            luareg_engine_core(self.lua.state());
             ServiceConf::register(&mut self.lua);
             LuaMsg::register_all(&mut self.lua);
             ProtocolObject::register_all(&mut self.lua);

@@ -1,8 +1,12 @@
+use std::time::Duration;
+
 use hclua::{lua_State, Lua, LuaTable, WrapObject};
 
-use crate::{LuaMsg, LuaService, ServiceConf, ServiceWrapper};
+use crate::{Config, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
 
-#[hclua::lua_module(name = "hc_core")]
+use super::ser;
+
+#[hclua::lua_module(name = "engine_core")]
 fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
     unsafe {
         let service = LuaService::get(lua.state());
@@ -74,19 +78,46 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 });
             }),
         );
-        
-        /// repeat 强制拉到另一段函数中
+
+        // repeat 强制拉到另一段函数中
         table.set(
             "timeout",
-            hclua::function2(move |timer_id: u32, inteval: u64| -> u64 {
-                // let sender = (*service).node.sender.clone();
-                // let msg = Box::from_raw(msg);
-                // tokio::spawn(async move {
-                //     let _ = sender.send(crate::HcMsg::RespMsg(*msg)).await;
-                // });
-                0
+            hclua::function2(move |inteval: u64, is_repeat: bool| -> u64 {
+                let next = if is_repeat {
+                    TimerConf::get_repeat_timer()
+                } else {
+                    TimerConf::get_once_timer()
+                };
+
+                let msg = HcMsg::add_timer(
+                    next,
+                    TimerConf::new(
+                        Duration::from_millis(inteval),
+                        (*service).get_id(),
+                        is_repeat,
+                    ),
+                );
+                let sender = (*service).node.sender.clone();
+                tokio::spawn(async move {
+                    let _ = sender.send(msg).await;
+                });
+                next
             }),
         );
+
+        // 删除订时器
+        table.set(
+            "del_timer",
+            hclua::function1(move |timer_id: u64| {
+                let msg = HcMsg::del_timer(timer_id);
+
+                let sender = (*service).node.sender.clone();
+                tokio::spawn(async move {
+                    let _ = sender.send(msg).await;
+                });
+            }),
+        );
+
         Some(table)
     }
 }

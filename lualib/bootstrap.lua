@@ -1,8 +1,8 @@
-local hc = require("hc")
-local hc1 = require("hc")
-local hc2 = require("hc")
+local hc = require("lualib.hc")
+local hc1 = require("lualib.hc")
+local hc2 = require("lualib.hc")
 
-local new = require("hc.core");
+local new = require("engine.core");
 
 print("bootstrap.lua ok!!!!!!!!")
 print("name = %s", new.name)
@@ -50,3 +50,13 @@ end)
 
 -- hc.close(0x01000001)
 -- hc.exit(0)
+
+hc.timeout(10, false, function ()
+    print("timeout aaaa")
+end)
+
+hc.async(function()
+    print("ccaaaa");
+    hc.sleep(20)
+    print("xxxxx");
+end)
