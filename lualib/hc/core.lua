@@ -12,7 +12,6 @@ end
 local _newservice = core.new_service
 local _send = core.send
 local _resp = core.resp
-local _timeout = core.timeout
 
 local session_id_coroutine = {}
 local protocol = {}

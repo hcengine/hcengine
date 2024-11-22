@@ -29,8 +29,8 @@ hc.async(function()
     local h3 = hc.query_service("test")
     assert(id == h3, "id must equal")
 
-    local v = hc.call("lua", id, "sum", 6, 3)
-    print("val == ", v)
+    local v, x = hc.call("lua", id, "sum", 6, 3)
+    print("val == ", v, x)
     
     -- local h4 = hc.query_service("bootstrap")
     -- assert(h4 == 1, "id must equal")
@@ -51,9 +51,11 @@ end)
 -- hc.close(0x01000001)
 -- hc.exit(0)
 
-hc.timeout(10, false, function ()
-    print("timeout aaaa")
+local id = hc.timeout(10, false, function ()
+    error("timeout aaaa")
 end)
+
+hc.del_timer(id)
 
 hc.async(function()
     print("ccaaaa");

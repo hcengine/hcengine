@@ -46,6 +46,8 @@ hc.register_protocol({
 hc.timeout = function(interval, is_repeat, fn)
     local timer_id = _timeout(interval, is_repeat or false)
     timer_cache[timer_id] = fn
+
+    return timer_id
 end
 
 --- 超时消息

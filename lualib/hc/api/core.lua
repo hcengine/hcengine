@@ -42,4 +42,12 @@ function core.timeout(interval, is_repeat) end
 --- @param timer_id integer
 function core.del_timer(timer_id) end
 
+--- 当时时间秒
+--- @return integer
+function core.now() end
+
+--- 当时时间毫秒
+--- @return integer
+function core.now_ms() end
+
 return core

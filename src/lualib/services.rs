@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use hclua::{lua_State, Lua, LuaTable, WrapObject};
 
-use crate::{Config, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
+use crate::{Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
 
 use super::ser;
 
@@ -117,7 +117,20 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 });
             }),
         );
-
+        // 获取当前时间戳
+        table.set(
+            "now",
+            hclua::function0(move || -> u64 {
+                CoreUtils::now()
+            }),
+        );
+        // 获取当前时间毫秒
+        table.set(
+            "now_ms",
+            hclua::function0(move || -> u64 {
+                CoreUtils::now_ms()
+            }),
+        );
         Some(table)
     }
 }
