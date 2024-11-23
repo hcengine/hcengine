@@ -14,8 +14,8 @@ local _send = core.send
 local _resp = core.resp
 
 local session_id_coroutine = {}
+local session_id_record = {}
 local protocol = {}
-local session_watcher = {}
 local timer_routine = {}
 local timer_profile_trace = {}
 
@@ -51,12 +51,26 @@ local function routine(fn, ...)
     end
 end
 
+local function check_coroutine_timeout()
+    local now = hc.now_ms()
+    print("check_coroutine_timeout", now)
+    for id, value in pairs(session_id_record) do
+        if now - value > 10000 then
+            local co = session_id_coroutine[id]
+            session_id_coroutine[id] = nil
+            session_id_record[id] = nil
+            if co then
+                co_resume(co, false, "TIMEOUT")
+            end
+        end
+    end
+end
+
 hc.pack = Protocol.lua_pack
 --- @param msg LuaMsg
 hc.unpack = function(msg)
     return Protocol.lua_unpack(msg)
 end
-
 
 hc.bootstrap_id = 1
 
@@ -73,9 +87,7 @@ hc.wait = function(session, receiver)
     print("wait session = ", session)
     if session then
         session_id_coroutine[session] = co_running()
-        if receiver then
-            session_watcher[session] = receiver
-        end
+        session_id_record[session] = hc.now_ms()
     else
         if type(receiver) ~= "number" then -- receiver is error message
             return false, receiver
@@ -103,8 +115,10 @@ hc.wait = function(session, receiver)
         end
     else
         -- false, "BREAK", {...}
+        -- or false, "TIMEOUT"
         if session then
             session_id_coroutine[session] = nil
+            session_id_record[session] = nil
         end
 
         if c then
@@ -173,8 +187,7 @@ local function _wrap_response(msg)
 
     local session = msg.sessionid
     if session > 0 then
-        session_watcher[session] = nil
-        local co = session_id_coroutine[session]
+        local co, _ = table.unpack(session_id_coroutine[session] or {})
         if co then
             session_id_coroutine[session] = nil
             wrap_co_resume(co, msg)
@@ -364,5 +377,9 @@ hc.register_protocol({
 })
 ------protocol message ----------------------
 ---------------------------------------------
+
+hc.init = function()
+    hc.timeout(1000, true, check_coroutine_timeout)
+end
 
 return hc;

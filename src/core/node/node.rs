@@ -1,5 +1,5 @@
 use algorithm::buf::{BinaryMut, BtMut};
-use algorithm::{StampTimer, TimerRBTree};
+use algorithm::{StampTimer, TimerRBTree, TimerWheel};
 use std::u64;
 use std::{i32, io, time::Duration, usize};
 use tokio::runtime::Runtime;
@@ -18,6 +18,8 @@ pub struct HcNode {
     pub state: HcNodeState,
     senders: Vec<HcWorkerState>,
     runtimes: Vec<Runtime>,
+    // // 时轮定时器, 因为游戏内都基本上是短时间内的定时器
+    // timer: TimerWheel<TimerNode>,
     timer: TimerRBTree<TimerNode>,
     recv: Receiver<HcMsg>,
 
@@ -40,6 +42,11 @@ impl HcNode {
             });
             runtimes.push(rt);
         }
+        // let mut timer = TimerWheel::new();
+        // // timer.append_timer_wheel(12, 60 * 60, "HourWheel");
+        // timer.append_timer_wheel(60, 60, "MinuteWheel");
+        // timer.append_timer_wheel(60, 1, "SecondWheel");
+        // timer.append_timer_wheel(1000, 1, "MillisWheel");
         let mut timer = TimerRBTree::new();
         // 避免timer_id在lua中因为类型存在的偏差
         timer.set_max_timerid(u64::MAX >> 8);

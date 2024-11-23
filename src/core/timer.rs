@@ -11,8 +11,12 @@ pub struct TimerConf {
 pub type TimerNode = StampTimer<TimerConf>;
 
 impl TimerConf {
-    pub fn new(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
-        StampTimer::new(Self::new_conf(service_id, is_repeat), duration)
+    pub fn new_second(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
+        StampTimer::new_second(Self::new_conf(service_id, is_repeat), duration)
+    }
+
+    pub fn new_millis(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
+        StampTimer::new_millis(Self::new_conf(service_id, is_repeat), duration)
     }
 
     pub fn new_conf(service_id: u32, is_repeat: bool) -> Self {
