@@ -1,5 +1,6 @@
 use algorithm::buf::{BinaryMut, BtMut};
 use algorithm::{StampTimer, TimerRBTree, TimerWheel};
+use std::time::Instant;
 use std::u64;
 use std::{i32, io, time::Duration, usize};
 use tokio::runtime::Runtime;
@@ -18,9 +19,9 @@ pub struct HcNode {
     pub state: HcNodeState,
     senders: Vec<HcWorkerState>,
     runtimes: Vec<Runtime>,
-    // // 时轮定时器, 因为游戏内都基本上是短时间内的定时器
-    // timer: TimerWheel<TimerNode>,
-    timer: TimerRBTree<TimerNode>,
+    // 时轮定时器, 因为游戏内都基本上是短时间内的定时器
+    timer: TimerWheel<TimerNode>,
+    // timer: TimerRBTree<TimerNode>,
     recv: Receiver<HcMsg>,
 
     status: HcStatusState,
@@ -42,12 +43,12 @@ impl HcNode {
             });
             runtimes.push(rt);
         }
-        // let mut timer = TimerWheel::new();
-        // // timer.append_timer_wheel(12, 60 * 60, "HourWheel");
-        // timer.append_timer_wheel(60, 60, "MinuteWheel");
-        // timer.append_timer_wheel(60, 1, "SecondWheel");
-        // timer.append_timer_wheel(1000, 1, "MillisWheel");
-        let mut timer = TimerRBTree::new();
+        let mut timer = TimerWheel::new();
+        timer.set_one_step(5);
+        timer.append_timer_wheel(200, "MillisWheel");
+        timer.append_timer_wheel(60, "SecondWheel");
+        timer.append_timer_wheel(60, "MinuteWheel");
+        // let mut timer = TimerRBTree::new();
         // 避免timer_id在lua中因为类型存在的偏差
         timer.set_max_timerid(u64::MAX >> 8);
         Ok(Self {
@@ -64,6 +65,7 @@ impl HcNode {
     async fn inner_run(&mut self) -> io::Result<i32> {
         let mut stop_once = false;
         let mut recvs = vec![];
+        let mut pre_tick = Instant::now();
         'outer: loop {
             if self.exitcode <= 0 {
                 break;
@@ -104,9 +106,13 @@ impl HcNode {
                 }
             }
 
+            let now = Instant::now();
+            let tick = now.duration_since(pre_tick).as_millis() as u64;
+            pre_tick = now;
             let mut results = vec![];
+            // println!("delay id = {:?}", self.timer.get_delay_id());
             self.timer
-                .update_now_with_callback(CoreUtils::now_ms(), &mut |_, id, v| {
+                .update_deltatime_with_callback(tick, &mut |_, id, v| {
                     results.push(HcMsg::tick_timer(v.val.service_id, id, v.val.is_repeat));
                     if v.val.is_repeat {
                         Some((id, v))
@@ -116,7 +122,6 @@ impl HcNode {
                 });
 
             if results.len() > 0 {
-                println!("timer not empty!!!!");
                 self.tick_timer(results).await;
             }
         }

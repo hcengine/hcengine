@@ -40,21 +40,20 @@ hc.register_protocol({
 })
 
 --- 超时消息
---- @param interval integer
+--- @param mills integer
 --- @param is_repeat boolean
 --- @return integer
-hc.timeout = function(interval, is_repeat, fn)
-    local timer_id = _timeout(interval, is_repeat or false)
+hc.timeout = function(mills, is_repeat, fn)
+    local timer_id = _timeout(mills, is_repeat or false)
     timer_cache[timer_id] = fn
-
     return timer_id
 end
 
 --- 超时消息
---- @param interval integer
+--- @param mills integer
 --- @return boolean, string | nil
-hc.sleep = function(interval)
-    local timer_id = _timeout(interval, false)
+hc.sleep = function(mills)
+    local timer_id = _timeout(mills, false)
     timer_cache[timer_id] = coroutine.running()
     local id, reason = coroutine.yield()
     if id ~= timer_id then
@@ -70,17 +69,10 @@ hc.del_timer = function(timer_id)
     _del_timer(timer_id)
 end
 
-function get_timer(time_id)
+hc.get_timer = function(time_id)
     return timer_cache[time_id];
 end
 
-function get_all_timer()
-    return timer_cache;
-end
-
-function get_timer_count()
-    return #timer_cache;
-end
 ---------------------------------------------
 ------timer oper       ----------------------
 ---------------------------------------------

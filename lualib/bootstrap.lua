@@ -2,6 +2,11 @@ local hc = require("lualib.hc")
 local hc1 = require("lualib.hc")
 local hc2 = require("lualib.hc")
 
+local xx = {a=21, b=false, c = {
+    d = "xxx",
+    f = function() end
+}}
+hc.print("%o", xx)
 
 -- local new = require("engine.core");
 

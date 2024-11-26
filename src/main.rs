@@ -10,7 +10,7 @@ async fn main() {
     let p = pt as usize;
     println!("p === 0x{:x}", p);
     // let x: *const u32 = std::ptr::addr_of!(p);
-
+    let args: Vec<String> = std::env::args().into_iter().map(|s| s.to_string()).collect();
 
     let mut node = HcNode::new(4).unwrap();
     let state = node.state.clone();

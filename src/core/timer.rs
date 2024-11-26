@@ -1,6 +1,6 @@
 use std::{sync::Mutex, time::Duration};
 
-use algorithm::StampTimer;
+use algorithm::{StampTimer, StepTimer};
 
 /// service_id, is_repeat
 pub struct TimerConf {
@@ -8,15 +8,19 @@ pub struct TimerConf {
     pub is_repeat: bool,
 }
 
-pub type TimerNode = StampTimer<TimerConf>;
+pub type TimerNode = StepTimer<u64, TimerConf>;
 
 impl TimerConf {
-    pub fn new_second(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
-        StampTimer::new_second(Self::new_conf(service_id, is_repeat), duration)
-    }
+    // pub fn new_second(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
+    //     StepTimer::new_second(Self::new_conf(service_id, is_repeat), duration)
+    // }
 
-    pub fn new_millis(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
-        StampTimer::new_millis(Self::new_conf(service_id, is_repeat), duration)
+    // pub fn new_millis(duration: Duration, service_id: u32, is_repeat: bool) -> TimerNode {
+    //     StepTimer::new_millis(Self::new_conf(service_id, is_repeat), duration)
+    // }
+
+    pub fn new(inteval: u64, service_id: u32, is_repeat: bool) -> TimerNode {
+        StepTimer::new(Self::new_conf(service_id, is_repeat), inteval)
     }
 
     pub fn new_conf(service_id: u32, is_repeat: bool) -> Self {

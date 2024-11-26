@@ -9,6 +9,7 @@ if not co_close then
     co_close = function() end
 end
 
+---@return integer, string
 local _newservice = core.new_service
 local _send = core.send
 local _resp = core.resp
@@ -81,6 +82,11 @@ hc.async = function(fn, ...)
 end
 
 hc.co_resume = wrap_co_resume
+
+--- @return integer, integer @ 第一个是正在运行的co数量, 第二个缓存的co数量
+hc.coroutine_num = function()
+    return co_num, #co_pool
+end
 
 ---@return integer | boolean, string
 hc.wait = function(session, receiver)
@@ -275,7 +281,7 @@ print("cccccccccccc?????")
 
 
 ---@param conf ServiceConf
----@return integer, string
+---@return integer|boolean, string
 hc.new_service = function(conf)
     return hc.wait(_newservice(conf))
 end
@@ -350,7 +356,7 @@ hc.register_protocol({
     pack = function(val)
         local msg = LuaMsg.new()
         msg.ty = hc.TY_NUMBER
-        msg:write_f32(val)
+        msg:write_f64(val)
         return msg
     end,
     --- @param msg LuaMsg
@@ -378,8 +384,20 @@ hc.register_protocol({
 ------protocol message ----------------------
 ---------------------------------------------
 
-hc.init = function()
-    hc.timeout(1000, true, check_coroutine_timeout)
+local delay_init_func = {}
+hc.register_init = function(fn)
+    table.insert(delay_init_func, fn)
 end
+
+hc.init = function()
+    for _, fn in ipairs(delay_init_func) do
+        fn()
+    end
+    delay_init_func = {}
+end
+
+hc.register_init(function()
+    hc.timeout(4999, true, check_coroutine_timeout)
+end)
 
 return hc;

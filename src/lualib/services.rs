@@ -91,8 +91,8 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
 
                 let msg = HcMsg::add_timer(
                     next,
-                    TimerConf::new_millis(
-                        Duration::from_millis(inteval),
+                    TimerConf::new(
+                        inteval,
                         (*service).get_id(),
                         is_repeat,
                     ),
