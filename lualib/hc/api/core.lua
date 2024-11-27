@@ -50,4 +50,9 @@ function core.now() end
 --- @return integer
 function core.now_ms() end
 
+--- 当前环境变量
+--- @param arg string
+--- @return string | string[]
+function core.env(arg) end
+
 return core

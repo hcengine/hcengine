@@ -1,7 +1,7 @@
 [package]
 name = "hcengine"
 version = "0.1.0"
-authors = [ "hpnlic <hpnlic@hotmail.com>" ]
+authors = ["hpnlic <hpnlic@hotmail.com>"]
 edition = "2021"
 description = "net for Rust"
 repository = "https://github.com/hcengine/hcnet"
@@ -14,12 +14,19 @@ keywords = ["hcnet"]
 [dependencies]
 tokio = { version = "1.40.0", features = ["full"] }
 lazy_static = "1.5.0"
-log="0.4.22"
+log = "0.4.22"
 hcnet = "0.1"
 # hclua = {version = "0.1.5", features = ["lua52"]}
-hclua = {path="../hclua", features = ["lua53"]}
-hcproto = {path="../hcproto/Rust"}
-algorithm = {path="../algorithm"}
+hclua = { path = "../hclua", features = ["lua53"] }
+hcproto = { path = "../hcproto/Rust" }
+algorithm = { path = "../algorithm" }
 # algorithm = "0.1.13"
 libc = "0.2.162"
 env_logger = "0.11.5"
+
+bpaf = { version = "0.9.8", features = [
+    "derive",
+    "extradocs",
+    "batteries",
+    "autocomplete",
+] }

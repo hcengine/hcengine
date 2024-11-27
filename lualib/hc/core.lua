@@ -83,6 +83,11 @@ end
 
 hc.co_resume = wrap_co_resume
 
+--- @return string|string[]
+hc.args = function()
+    return hc.env("args")
+end
+
 --- @return integer, integer @ 第一个是正在运行的co数量, 第二个缓存的co数量
 hc.coroutine_num = function()
     return co_num, #co_pool
@@ -369,7 +374,7 @@ hc.register_protocol({
 hc.register_protocol({
     name = "string",
     ty = hc.TY_STRING,
-    pack = function(val) 
+    pack = function(val)
         local msg = LuaMsg.new()
         msg.ty = hc.TY_STRING
         msg:write_str(val)
