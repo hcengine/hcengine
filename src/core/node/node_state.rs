@@ -6,18 +6,20 @@ use std::sync::{
 use algorithm::HashMap;
 use tokio::sync::mpsc::Sender;
 
-use crate::HcMsg;
+use crate::{ConfigOption, HcMsg};
 
 #[derive(Clone)]
 pub struct HcNodeState {
     next: Arc<AtomicU32>,
+    pub config: Arc<ConfigOption>,
     pub sender: Sender<HcMsg>,
     pub service_map: Arc<RwLock<HashMap<String, u32>>>,
 }
 
 impl HcNodeState {
-    pub fn new(sender: Sender<HcMsg>) -> Self {
+    pub fn new(config: ConfigOption, sender: Sender<HcMsg>) -> Self {
         Self {
+            config: Arc::new(config),
             next: Arc::new(AtomicU32::new(1)),
             sender,
             service_map: Arc::new(RwLock::new(HashMap::new())),

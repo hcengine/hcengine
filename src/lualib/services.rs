@@ -5,21 +5,28 @@ use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject};
 use crate::{Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
 
 extern "C" fn get_env(lua: *mut lua_State) -> hclua::c_int {
-    let v: Option<String> = LuaRead::lua_read_at_position(lua, 1);
-    let arg = unwrap_or!(v, return 0);
-    match &*arg {
-        "args" => {
-            let args: Vec<String> = std::env::args()
-                .into_iter()
-                .map(|s| s.to_string())
-                .collect();
-            args.push_to_lua(lua);
-            return 1;
-        }
-        _ => {
-            let v = unwrap_or!(std::env::var(arg).ok(), return 0);
-            v.push_to_lua(lua);
-            return 1;
+    unsafe {
+        let service = LuaService::get(lua);
+        let v: Option<String> = LuaRead::lua_read_at_position(lua, 1);
+        let arg = unwrap_or!(v, return 0);
+        match &*arg {
+            "args" => {
+                let args: Vec<String> = std::env::args()
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect();
+                args.push_to_lua(lua);
+                return 1;
+            }
+            _ => {
+                if let Some(v) = (*service).node.config.lua_env.get(&arg) {
+                    v.push_to_lua(lua);
+                    return 1;
+                }
+                let v = unwrap_or!(std::env::var(arg).ok(), return 0);
+                v.push_to_lua(lua);
+                return 1;
+            }
         }
     }
 }

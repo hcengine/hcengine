@@ -1,18 +1,25 @@
 use std::time::Duration;
 
-use hcengine::{HcNode, ServiceConf};
+use hcengine::{parse_env, HcNode, ServiceConf};
 
 #[tokio::main]
 async fn main() {
+    let config = match parse_env().await {
+        Ok(config) => config,
+        Err(e) => {
+            panic!("加载配置失败:{:?}", e);
+        }
+    };
+    println!("args = {:?}", config);
+
     env_logger::init();
     let mut value: u32 = 123456;
     let pt = &mut value as *mut u32;
     let p = pt as usize;
     println!("p === 0x{:x}", p);
     // let x: *const u32 = std::ptr::addr_of!(p);
-    let args: Vec<String> = std::env::args().into_iter().map(|s| s.to_string()).collect();
 
-    let mut node = HcNode::new(4).unwrap();
+    let mut node = HcNode::new(config).unwrap();
     let state = node.state.clone();
     let mut conf = ServiceConf::default();
     conf.name = "bootstrap".to_string();

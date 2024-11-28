@@ -23,6 +23,11 @@ algorithm = { path = "../algorithm" }
 # algorithm = "0.1.13"
 libc = "0.2.162"
 env_logger = "0.11.5"
+serde_with = "3.4.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8.2"
+
+log4rs = "1.3.0"
 
 bpaf = { version = "0.9.8", features = [
     "derive",

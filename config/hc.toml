@@ -1,0 +1,11 @@
+
+# 日志等级
+log_level = "trace"
+# 日志文件
+log_file = "logs/hc.log"
+
+# lua中的环境变量
+[lua_env]
+aa = "bb"
+cc = "dd"
+zz = "this is zz ddd"

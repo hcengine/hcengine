@@ -9,8 +9,7 @@ use tokio::sync::mpsc::{channel, Receiver};
 use crate::core::msg::HcOper;
 use crate::core::worker;
 use crate::{
-    Config, CoreUtils, HcMsg, HcStatusState, HcWorker, HcWorkerState, LuaMsg, ServiceConf,
-    TimerNode,
+    Config, ConfigOption, CoreUtils, HcMsg, HcStatusState, HcWorker, HcWorkerState, LuaMsg, ServiceConf, TimerNode
 };
 
 use super::{node_state, HcNodeState};
@@ -29,11 +28,12 @@ pub struct HcNode {
 }
 
 impl HcNode {
-    pub fn new(worker_num: usize) -> io::Result<Self> {
+    pub fn new(config: ConfigOption) -> io::Result<Self> {
         let mut senders = vec![];
         let mut runtimes = vec![];
+        let worker_num = config.worker_num;
         let (send, recv) = channel(usize::MAX >> 3);
-        let node_state = HcNodeState::new(send);
+        let node_state = HcNodeState::new(config, send);
         for i in 0..worker_num.max(1) {
             let (work, sender) = HcWorker::new(i as u32, node_state.clone());
             senders.push(sender);
