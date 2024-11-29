@@ -29,19 +29,6 @@ impl CoreUtils {
     pub fn try_init_log(option: &ConfigOption) {
         let mut log_config = log4rs::config::Config::builder();
         let mut root = Root::builder();
-        // for (name, path) in log_names {
-        //     let (path, level) = {
-        //         let vals: Vec<&str> = path.split(' ').collect();
-        //         if vals.len() == 1 {
-        //             (path, Level::Info)
-        //         } else {
-        //             (
-        //                 vals[0].to_string(),
-        //                 Level::from_str(vals[1]).ok().unwrap_or(Level::Info),
-        //             )
-        //         }
-        //     };
-        // }
 
         // 设置默认的匹配类型打印时间信息
         let parttern =

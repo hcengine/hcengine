@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use hcengine::{parse_env, HcNode, ServiceConf};
+use hcengine::{parse_env, CoreUtils, HcNode, ServiceConf};
 
 #[tokio::main]
 async fn main() {
@@ -10,9 +10,10 @@ async fn main() {
             panic!("加载配置失败:{:?}", e);
         }
     };
+    CoreUtils::try_init_log(&config);
     println!("args = {:?}", config);
-
-    env_logger::init();
+    log::warn!("aaaaaaaaaaaaaa");
+    // env_logger::init();
     let mut value: u32 = 123456;
     let pt = &mut value as *mut u32;
     let p = pt as usize;

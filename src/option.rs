@@ -30,7 +30,6 @@ pub struct ConfigOption {
     pub(crate) log_file: String,
     #[serde(default = "default_work_num")]
     pub(crate) worker_num: usize,
-
     #[serde(default)]
     pub(crate) disable_stdout: bool,
 }

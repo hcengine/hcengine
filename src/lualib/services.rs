@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject};
+use log::{debug, error, info, trace, warn};
 
 use crate::{Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
 
@@ -29,6 +30,23 @@ extern "C" fn get_env(lua: *mut lua_State) -> hclua::c_int {
             }
         }
     }
+}
+
+
+fn lua_print(method : u8, val: String) {
+    match method {
+        1 => {
+            error!("{}", val);
+            error!(target:"tunm_error", "{}", val)
+        },
+        2 => {
+            warn!("{}", val);
+        },
+        3 => info!("{}", val),
+        4 => debug!("{}", val),
+        5 => trace!("{}", val),
+        _ => trace!("{}", val),
+    };
 }
 
 #[hclua::lua_module(name = "engine_core")]
@@ -144,6 +162,11 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "now_ms",
             hclua::function0(move || -> u64 { CoreUtils::now_ms() }),
+        );
+        
+        table.set(
+            "lua_print",
+            hclua::function2(lua_print),
         );
         // 获取环境变量
         table.register("env", get_env);

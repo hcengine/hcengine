@@ -155,15 +155,16 @@ pub async fn parse_env() -> io::Result<ConfigOption> {
     }
     let mut option = ConfigOption::default();
     // option.pidfile = shared.pidfile.clone();
+    option.disable_stdout = option.disable_stdout;
     if shared.verbose {
         option.log_level = Some(LevelFilter::Trace);
     }
     match command {
         Command::Run(config) => {
             let mut option = read_config_from_path(config.config)?;
-            // if shared.verbose {
-            //     option.default_level = Some(LevelFilter::Trace);
-            // }
+            if shared.verbose {
+                option.log_level = Some(LevelFilter::Trace);
+            }
             // option.after_load_option()?;
             return Ok(option);
         }

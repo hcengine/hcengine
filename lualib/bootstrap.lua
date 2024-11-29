@@ -69,6 +69,6 @@ hc.print("%o", xx)
 --     print("xxxxx");
 -- end)
 
-hc.print("valu = %o", hc.args())
-hc.print("valu = %o", hc.env("PATH"))
+hc.print("value = %o", hc.args())
+-- hc.print("valu = %o", hc.env("PATH"))
 hc.print("value = %o", hc.env("zz"))
