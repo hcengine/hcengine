@@ -4,15 +4,16 @@ use algorithm::{
     buf::{BinaryMut, BtMut},
     HashMap, TimerRBTree,
 };
-use hcnet::{NetConn, NetSender};
+use hcnet::{NetConn, NetSender, Settings, TlsSettings};
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
     core::{
-        msg::{HcNet, HcOper, LuaMsg},
+        msg::{HcNet, HcOper, LuaMsg, NewServer},
         HcMsg,
-    }, Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf, ServiceWrapper
+    },
+    Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf, ServiceWrapper,
 };
 
 use super::HcWorkerState;
@@ -23,7 +24,7 @@ pub struct HcWorker {
     pub recv: Receiver<HcMsg>,
     pub node_state: HcNodeState,
     pub services: HashMap<u32, ServiceWrapper>,
-    pub net_servers: HashMap<u64, Sender<()>>,
+    pub net_servers: HashMap<u64, NetSender>,
     pub net_clients: HashMap<u64, NetInfo>,
 }
 
@@ -47,10 +48,9 @@ impl HcWorker {
 
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
         match msg {
-
             HcMsg::Msg(message) => todo!(),
             HcMsg::Net(msg) => match msg {
-                HcNet::NewServer(conn) => self.new_conn(conn).await,
+                HcNet::NewServer(server) => self.new_conn(server).await,
                 HcNet::AcceptConn(info) => self.accept_conn(info).await,
                 HcNet::CloseConn(info) => self.close_conn(info).await,
                 _ => {
@@ -117,15 +117,51 @@ impl HcWorker {
         Ok(())
     }
 
-    
-    pub async fn new_conn(&mut self, con: NetConn) {
-        let (_, receiver) = NetSender::new(10, 1);
-        let (net_sender, net_receiver) = channel(1);
-        let handler = NetServer::new(con.get_connection_id(), self.state.clone(), net_receiver);
-        self.net_servers.insert(con.get_connection_id(), net_sender);
+    pub async fn new_conn(&mut self, server: NewServer) {
+        let conn = match &*server.method {
+            "ws" => NetConn::ws_bind(server.url, server.settings).await.unwrap(),
+            "wss" => {
+                let mut settings = Settings {
+                    domain: Some("test.hcengine.net".to_string()),
+                    ..Settings::default()
+                };
+                settings.tls = Some(TlsSettings {
+                    cert: "key/test.hcengine.net.pem".to_string(),
+                    key: "key/test.hcengine.net.key".to_string(),
+                });
+                NetConn::ws_bind(server.url, settings).await.unwrap()
+            }
+            "kcp" => NetConn::kcp_bind(server.url, Settings::default())
+                .await
+                .unwrap(),
+            _ => NetConn::tcp_bind(server.url, Settings::default())
+                .await
+                .unwrap(),
+        };
+
+        let (sender, receiver) = NetSender::new(10, 1);
+        let id = conn.get_connection_id();
+        let handler = NetServer::new(id, server.service_id, self.state.clone());
+        self.net_servers.insert(id, sender);
         tokio::spawn(async move {
-            let _ = con.run_with_handler(handler, receiver).await;
+            let _ = conn.run_with_handler(handler, receiver).await;
         });
+        let creator = server.service_id;
+        let session = server.session_id;
+        let mut data = BinaryMut::new();
+        data.put_u64(id);
+        let _ = self
+            .node_state
+            .sender
+            .send(HcMsg::RespMsg(LuaMsg {
+                ty: Config::TY_INTEGER,
+                sender: 0,
+                receiver: creator,
+                sessionid: session,
+                err: None,
+                data,
+            }))
+            .await;
     }
 
     pub async fn accept_conn(&mut self, con: NetInfo) {

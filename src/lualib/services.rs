@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject};
+use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
@@ -47,6 +48,33 @@ fn lua_print(method : u8, val: String) {
         5 => trace!("{}", val),
         _ => trace!("{}", val),
     };
+}
+
+
+async fn bind_listen(method: String, url: String, settings: Settings) {
+    let conn = match &*method {
+        "ws" => NetConn::ws_bind("0.0.0.0:2003", settings)
+            .await
+            .unwrap(),
+        "wss" => {
+            // let mut settings = Settings {
+            //     domain: Some("test.wmproxy.net".to_string()),
+            //     ..Settings::default()
+            // };
+            // settings.tls = Some(TlsSettings {
+            //     cert: "key/test.wmproxy.net.pem".to_string(),
+            //     key: "key/test.wmproxy.net.key".to_string(),
+            // });
+            NetConn::ws_bind("0.0.0.0:2003", settings).await.unwrap()
+        }
+        "kcp" => NetConn::kcp_bind("0.0.0.0:2003", settings)
+            .await
+            .unwrap(),
+        _ => NetConn::tcp_bind("0.0.0.0:2003", settings)
+            .await
+            .unwrap(),
+    };
+
 }
 
 #[hclua::lua_module(name = "engine_core")]
@@ -167,6 +195,18 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "lua_print",
             hclua::function2(lua_print),
+        );
+        table.set(
+            "bind_listen",
+            hclua::function2(move |method: String, url: String| -> i64 {
+                let session = (*service).node.next_seq() as i64;
+                let id = (*service).get_id();
+                let sender = (*service).worker.sender.clone();
+                tokio::spawn(async move {
+                    let _ = sender.send(HcMsg::net_create(id, session, method, url, Settings::default())).await;
+                });
+                session
+            }),
         );
         // 获取环境变量
         table.register("env", get_env);

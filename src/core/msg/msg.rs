@@ -1,5 +1,5 @@
 use algorithm::{buf::BinaryMut, StampTimer};
-use hcnet::{Message, NetConn, NetSender};
+use hcnet::{Message, NetConn, NetSender, Settings};
 
 use crate::{LuaMsg, NetInfo, ServiceConf, TimerNode};
 
@@ -13,8 +13,16 @@ pub enum HcOper {
     CloseService(u32),
 }
 
+pub struct NewServer {
+    pub service_id: u32,
+    pub session_id: i64,
+    pub method: String,
+    pub url: String,
+    pub settings: Settings,
+}
+
 pub enum HcNet {
-    NewServer(NetConn),
+    NewServer(NewServer),
     AcceptConn(NetInfo),
     CloseConn(NetInfo),
 }
@@ -61,6 +69,22 @@ impl HcMsg {
     /// tick
     pub fn tick_timer(service_id: u32, timer_id: u64, is_repeat: bool) -> Self {
         HcMsg::Oper(HcOper::TickTimer(service_id, timer_id, is_repeat))
+    }
+
+    pub fn net_create(
+        service_id: u32,
+        session_id: i64,
+        method: String,
+        url: String,
+        settings: Settings,
+    ) -> Self {
+        HcMsg::Net(HcNet::NewServer(NewServer {
+            service_id,
+            session_id,
+            method,
+            url,
+            settings,
+        }))
     }
 
     pub fn net_accept(info: NetInfo) -> Self {

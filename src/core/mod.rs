@@ -1,4 +1,4 @@
-mod msg;
+pub mod msg;
 mod node;
 mod service;
 mod worker;
@@ -8,7 +8,7 @@ mod timer;
 mod utils;
 mod net;
 
-pub use msg::{HcMsg, LuaMsg};
+pub use msg::{HcMsg, LuaMsg, HcNet};
 pub use node::{HcNode, HcNodeState};
 pub use status::HcStatusState;
 pub use service::*;
