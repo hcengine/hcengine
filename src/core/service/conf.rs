@@ -1,5 +1,5 @@
-use std::usize;
 use hclua::ObjectMacro;
+use std::usize;
 
 #[derive(Debug, Clone, ObjectMacro)]
 pub struct ServiceConf {
@@ -27,6 +27,17 @@ impl Default for ServiceConf {
             name: "default".to_string(),
             source: "".to_string(),
             params: "".to_string(),
+        }
+    }
+}
+
+impl ServiceConf {
+    pub fn bootstrap() -> Self {
+        Self {
+            name: "bootstrap".to_string(),
+            source: "bootstrap".to_string(),
+            threadid: 0,
+            ..Default::default()
         }
     }
 }

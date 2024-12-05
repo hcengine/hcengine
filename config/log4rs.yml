@@ -1,0 +1,41 @@
+refresh_rate: 30 seconds
+
+appenders:
+  stdout:
+    kind: console
+      
+  default:
+    kind: file
+    path: "logs/hc.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} {m}{n}"
+
+  default_err:
+    kind: file
+    path: "logs/hc_err.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} {m}{n}"
+
+root:
+  level: info
+  appenders:
+    - default
+    - stdout
+
+loggers:
+  app::backend::db:
+    level: trace
+    
+  hcengine:
+    level: trace
+    appenders:
+      - default
+      - stdout
+    additive: false
+  
+  hc_error:
+    level: error
+    appenders:
+      - stdout
+      - default_err
+    additive: false

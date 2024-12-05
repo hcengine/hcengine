@@ -13,20 +13,10 @@ async fn main() {
     CoreUtils::try_init_log(&config);
     println!("args = {:?}", config);
     log::warn!("aaaaaaaaaaaaaa");
-    // env_logger::init();
-    let mut value: u32 = 123456;
-    let pt = &mut value as *mut u32;
-    let p = pt as usize;
-    println!("p === 0x{:x}", p);
-    // let x: *const u32 = std::ptr::addr_of!(p);
 
     let mut node = HcNode::new(config).unwrap();
     let state = node.state.clone();
-    let mut conf = ServiceConf::default();
-    conf.name = "bootstrap".to_string();
-    conf.source = "bootstrap".to_string();
-    conf.threadid = 0;
-
+    let conf = ServiceConf::bootstrap();
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(100)).await;
         let _ = state.sender.send(hcengine::HcMsg::stop(-1)).await;

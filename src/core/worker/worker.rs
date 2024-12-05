@@ -4,12 +4,15 @@ use algorithm::{
     buf::{BinaryMut, BtMut},
     HashMap, TimerRBTree,
 };
+use hcnet::{NetConn, NetSender};
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
-    core::{msg::{HcOper, LuaMsg}, HcMsg},
-    Config, HcNodeState, LuaService, ServiceConf, ServiceWrapper,
+    core::{
+        msg::{HcNet, HcOper, LuaMsg},
+        HcMsg,
+    }, Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf, ServiceWrapper
 };
 
 use super::HcWorkerState;
@@ -17,10 +20,11 @@ use super::HcWorkerState;
 pub struct HcWorker {
     pub nextid: usize,
     pub state: HcWorkerState,
-    pub timer: TimerRBTree<u64>,
     pub recv: Receiver<HcMsg>,
     pub node_state: HcNodeState,
     pub services: HashMap<u32, ServiceWrapper>,
+    pub net_servers: HashMap<u64, Sender<()>>,
+    pub net_clients: HashMap<u64, NetInfo>,
 }
 
 impl HcWorker {
@@ -31,10 +35,11 @@ impl HcWorker {
             Self {
                 nextid: 1,
                 state: state.clone(),
-                timer: TimerRBTree::new(),
                 recv,
                 node_state,
                 services: HashMap::new(),
+                net_servers: HashMap::new(),
+                net_clients: HashMap::new(),
             },
             state,
         )
@@ -42,34 +47,43 @@ impl HcWorker {
 
     async fn deal_msg(&mut self, msg: HcMsg) -> io::Result<()> {
         match msg {
+
             HcMsg::Msg(message) => todo!(),
-            HcMsg::Oper(oper) => {
-                match oper {
-                    HcOper::NewService(conf) => self.new_service(conf).await,
-                    HcOper::CloseService(v) => {
-                        if v == Config::BOOTSTRAP_ADDR {
-                            let _ = self.node_state.sender.send(HcMsg::stop(0)).await;
-                            return Ok(());
-                        }
-                        if let Some(service) = self.services.remove(&v) {
-                            unsafe {
-                                (*service.0).set_ok(false);
-                                LuaService::remove_self(service.0);
-                            };
-                        }
-                    }
-                    HcOper::TickTimer(service_id, timer_id, _) => {
-                        if let Some(service) = self.services.get(&service_id) {
-                            unsafe {
-                                if (*service.0).is_ok() {
-                                    (*service.0).tick_timer(timer_id);
-                                }
-                            };
-                        }
-                    }
-                    _ => {todo!()}
+            HcMsg::Net(msg) => match msg {
+                HcNet::NewServer(conn) => self.new_conn(conn).await,
+                HcNet::AcceptConn(info) => self.accept_conn(info).await,
+                HcNet::CloseConn(info) => self.close_conn(info).await,
+                _ => {
+                    todo!()
                 }
-            }
+            },
+            HcMsg::Oper(oper) => match oper {
+                HcOper::NewService(conf) => self.new_service(conf).await,
+                HcOper::CloseService(v) => {
+                    if v == Config::BOOTSTRAP_ADDR {
+                        let _ = self.node_state.sender.send(HcMsg::stop(0)).await;
+                        return Ok(());
+                    }
+                    if let Some(service) = self.services.remove(&v) {
+                        unsafe {
+                            (*service.0).set_ok(false);
+                            LuaService::remove_self(service.0);
+                        };
+                    }
+                }
+                HcOper::TickTimer(service_id, timer_id, _) => {
+                    if let Some(service) = self.services.get(&service_id) {
+                        unsafe {
+                            if (*service.0).is_ok() {
+                                (*service.0).tick_timer(timer_id);
+                            }
+                        };
+                    }
+                }
+                _ => {
+                    todo!()
+                }
+            },
             HcMsg::CallMsg(msg) => {
                 self.call_msg(msg).await;
             }
@@ -101,6 +115,25 @@ impl HcWorker {
         println!("WORKER START {}", self.state.woker_id());
         self.inner_run().await?;
         Ok(())
+    }
+
+    
+    pub async fn new_conn(&mut self, con: NetConn) {
+        let (_, receiver) = NetSender::new(10, 1);
+        let (net_sender, net_receiver) = channel(1);
+        let handler = NetServer::new(con.get_connection_id(), self.state.clone(), net_receiver);
+        self.net_servers.insert(con.get_connection_id(), net_sender);
+        tokio::spawn(async move {
+            let _ = con.run_with_handler(handler, receiver).await;
+        });
+    }
+
+    pub async fn accept_conn(&mut self, con: NetInfo) {
+        self.net_clients.insert(con.sender.get_connection_id(), con);
+    }
+
+    pub async fn close_conn(&mut self, con: NetInfo) {
+        self.net_clients.remove(&con.sender.get_connection_id());
     }
 
     pub async fn new_service(&mut self, conf: ServiceConf) {
@@ -163,7 +196,11 @@ impl HcWorker {
             unsafe {
                 if !(*service).init() {
                     if service_id == Config::BOOTSTRAP_ADDR {
-                        let _ = self.node_state.sender.send(HcMsg::oper(HcOper::Stop(-1))).await;
+                        let _ = self
+                            .node_state
+                            .sender
+                            .send(HcMsg::oper(HcOper::Stop(-1)))
+                            .await;
                     }
                     return;
                 }
@@ -194,7 +231,6 @@ impl HcWorker {
         // conf.service_id.unwrap_or(0)
     }
 
-    
     pub async fn call_msg(&mut self, msg: LuaMsg) {
         for id in &self.services {
             println!("id === {:?}", id.0);
@@ -208,7 +244,6 @@ impl HcWorker {
         }
     }
 
-    
     pub async fn resp_msg(&mut self, msg: LuaMsg) {
         let service_id = Config::get_service_id(msg.receiver);
         if let Some(service) = self.services.get_mut(&service_id) {
