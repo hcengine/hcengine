@@ -75,6 +75,6 @@ hc.print("value = %o", hc.env("zz"))
 
 hc.async(function()
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)
-    local ret = hc.wait(hc.bind_listen("tcp", "0.0.0.0:2003")) 
+    local ret = hc.wait(hc.bind_listen("tcp", "0.0.0.0:2003"))
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)
 end)

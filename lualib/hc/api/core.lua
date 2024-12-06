@@ -55,4 +55,11 @@ function core.now_ms() end
 --- @return string | string[]
 function core.env(arg) end
 
+
+--- 绑定连接
+--- @param method string
+--- @param url string
+--- @return integer
+function core.bind_listen(method, url) end
+
 return core

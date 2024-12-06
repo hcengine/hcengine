@@ -107,7 +107,7 @@ hc.wait = function(session, receiver)
 
     print("hc.wait ", session, receiver)
     local a, b, c = co_yield()
-    print("xxx ", a, b, c)
+    print("hc.wait yield ", a, b, c)
     if a then
         local proto = protocol[a.ty]
         if not proto then
@@ -198,7 +198,7 @@ local function _wrap_response(msg)
 
     local session = msg.sessionid
     if session > 0 then
-        local co, _ = table.unpack(session_id_coroutine[session] or {})
+        local co = session_id_coroutine[session]
         if co then
             session_id_coroutine[session] = nil
             wrap_co_resume(co, msg)

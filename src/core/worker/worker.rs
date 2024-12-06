@@ -148,6 +148,7 @@ impl HcWorker {
         });
         let creator = server.service_id;
         let session = server.session_id;
+        println!("creator service_id = {} session = {}", creator, session);
         let mut data = BinaryMut::new();
         data.put_u64(id);
         let _ = self
