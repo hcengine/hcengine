@@ -1,12 +1,9 @@
 use algorithm::buf::Bt;
-use hclua::{self, Lua, LuaPush};
+use hclua::{self, Lua, LuaPush, LuaWrapperTableValue, SerUtils};
 use hcproto::Buffer;
 use log::warn;
 
-
 use crate::{Config, LuaMsg};
-
-use super::{LuaWrapperTableValue, SerUtils};
 
 pub struct ProtoLua;
 
@@ -39,5 +36,4 @@ impl ProtoLua {
             return Some(0);
         }
     }
-
 }

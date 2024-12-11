@@ -4,7 +4,7 @@ use algorithm::{
     buf::{BinaryMut, BtMut},
     HashMap, TimerRBTree,
 };
-use hcnet::{NetConn, NetSender, Settings, TlsSettings};
+use hcnet::{NetConn, NetSender, Settings};
 use log::info;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -125,10 +125,8 @@ impl HcWorker {
                     domain: Some("test.hcengine.net".to_string()),
                     ..Settings::default()
                 };
-                settings.tls = Some(TlsSettings {
-                    cert: "key/test.hcengine.net.pem".to_string(),
-                    key: "key/test.hcengine.net.key".to_string(),
-                });
+                settings.cert = Some("key/test.hcengine.net.pem".to_string());
+                settings.key = Some("key/test.hcengine.net.key".to_string());
                 NetConn::ws_bind(server.url, settings).await.unwrap()
             }
             "kcp" => NetConn::kcp_bind(server.url, Settings::default())
