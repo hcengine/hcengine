@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject};
+use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject, WrapSerde};
 use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
@@ -198,7 +198,8 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         );
         table.set(
             "bind_listen",
-            hclua::function2(move |method: String, url: String| -> i64 {
+            hclua::function3(move |method: String, url: String, settings: Option<WrapSerde<Settings>>| -> i64 {
+                println!("settings = {:?}", settings);
                 let session = (*service).node.next_seq() as i64;
                 let id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
