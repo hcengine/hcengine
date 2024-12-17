@@ -1,11 +1,13 @@
 use async_trait::async_trait;
-use hcnet::{Handler, Message, NetResult, NetSender};
+use hcnet::{CloseCode, Handler, Message, NetResult, NetSender};
+use log::trace;
 
-use crate::{HcNodeState, HcWorkerState};
+use crate::{HcMsg, HcNodeState, HcWorkerState, NetInfo};
 
 pub struct CommonHandler {
     pub sender: NetSender,
-    pub server_id: u64,
+    pub connect_id: u64,
+    pub service_id: u32,
     pub worker: HcWorkerState,
 }
 
@@ -19,5 +21,23 @@ impl Handler for CommonHandler {
             _ => {}
         }
         Ok(())
+    }
+
+    /// 此接口在远程服务端被关闭时进行触发
+    async fn on_close(&mut self, code: CloseCode, reason: String) {
+        trace!(
+            "on_close code = {}, reason = {reason}",
+            Into::<u16>::into(code)
+        );
+
+        let _ = self
+            .worker
+            .sender
+            .send(HcMsg::net_close(
+                self.sender.get_connection_id(),
+                self.service_id,
+                reason,
+            ))
+            .await;
     }
 }

@@ -63,4 +63,11 @@ function core.env(arg) end
 --- @return integer
 function core.bind_listen(method, url, settings) end
 
+
+--- 关闭连接
+--- @param id integer
+--- @param reason string
+function core.close_socket(id, reason) end
+
+
 return core

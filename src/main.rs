@@ -18,7 +18,7 @@ async fn main() {
     let state = node.state.clone();
     let conf = ServiceConf::bootstrap();
     tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(100)).await;
+        tokio::time::sleep(Duration::from_secs(10000)).await;
         let _ = state.sender.send(hcengine::HcMsg::stop(-1)).await;
     });
     node.new_service(conf).await;

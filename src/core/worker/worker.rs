@@ -52,7 +52,7 @@ impl HcWorker {
             HcMsg::Net(msg) => match msg {
                 HcNet::NewServer(server) => self.new_conn(server).await,
                 HcNet::AcceptConn(info) => self.accept_conn(info).await,
-                HcNet::CloseConn(info) => self.close_conn(info).await,
+                HcNet::CloseConn(id, service_id, reason) => self.close_conn(id, service_id, reason).await,
                 _ => {
                     todo!()
                 }
@@ -150,7 +150,7 @@ impl HcWorker {
         let mut data = BinaryMut::new();
         data.put_u64(id);
         let _ = self
-            .node_state
+            .state
             .sender
             .send(HcMsg::RespMsg(LuaMsg {
                 ty: Config::TY_INTEGER,
@@ -164,11 +164,29 @@ impl HcWorker {
     }
 
     pub async fn accept_conn(&mut self, con: NetInfo) {
+        
+        if let Some(service) = self.services.get_mut(&con.service_id) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).accept_conn(con.connect_id, con.sender.get_connection_id());
+                }
+            }
+        }
         self.net_clients.insert(con.sender.get_connection_id(), con);
     }
 
-    pub async fn close_conn(&mut self, con: NetInfo) {
-        self.net_clients.remove(&con.sender.get_connection_id());
+    pub async fn close_conn(&mut self, id: u64, _service_id: u32, reason: String) {
+        println!("close conn ==== {:?} ", id);
+        if let Some(mut info) = self.net_clients.remove(&id) {
+            if let Some(service) = self.services.get_mut(&info.service_id) {
+                unsafe {
+                    if (*service.0).is_ok() {
+                        (*service.0).close_conn(info.connect_id, id, &reason);
+                    }
+                    let _ = info.sender.close_with_reason(hcnet::CloseCode::Normal, reason);
+                }
+            }
+        }
     }
 
     pub async fn new_service(&mut self, conf: ServiceConf) {

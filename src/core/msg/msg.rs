@@ -24,7 +24,7 @@ pub struct NewServer {
 pub enum HcNet {
     NewServer(NewServer),
     AcceptConn(NetInfo),
-    CloseConn(NetInfo),
+    CloseConn(u64, u32, String),
 }
 
 pub enum HcMsg {
@@ -91,7 +91,7 @@ impl HcMsg {
         HcMsg::Net(HcNet::AcceptConn(info))
     }
 
-    pub fn net_close(info: NetInfo) -> Self {
-        HcMsg::Net(HcNet::CloseConn(info))
+    pub fn net_close(id: u64, service_id: u32, reason: String) -> Self {
+        HcMsg::Net(HcNet::CloseConn(id, service_id, reason))
     }
 }

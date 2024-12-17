@@ -33,16 +33,15 @@ extern "C" fn get_env(lua: *mut lua_State) -> hclua::c_int {
     }
 }
 
-
-fn lua_print(method : u8, val: String) {
+fn lua_print(method: u8, val: String) {
     match method {
         1 => {
             error!("{}", val);
             error!(target:"tunm_error", "{}", val)
-        },
+        }
         2 => {
             warn!("{}", val);
-        },
+        }
         3 => info!("{}", val),
         4 => debug!("{}", val),
         5 => trace!("{}", val),
@@ -50,12 +49,9 @@ fn lua_print(method : u8, val: String) {
     };
 }
 
-
 async fn bind_listen(method: String, url: String, settings: Settings) {
     let conn = match &*method {
-        "ws" => NetConn::ws_bind("0.0.0.0:2003", settings)
-            .await
-            .unwrap(),
+        "ws" => NetConn::ws_bind("0.0.0.0:2003", settings).await.unwrap(),
         "wss" => {
             // let mut settings = Settings {
             //     domain: Some("test.wmproxy.net".to_string()),
@@ -67,14 +63,9 @@ async fn bind_listen(method: String, url: String, settings: Settings) {
             // });
             NetConn::ws_bind("0.0.0.0:2003", settings).await.unwrap()
         }
-        "kcp" => NetConn::kcp_bind("0.0.0.0:2003", settings)
-            .await
-            .unwrap(),
-        _ => NetConn::tcp_bind("0.0.0.0:2003", settings)
-            .await
-            .unwrap(),
+        "kcp" => NetConn::kcp_bind("0.0.0.0:2003", settings).await.unwrap(),
+        _ => NetConn::tcp_bind("0.0.0.0:2003", settings).await.unwrap(),
     };
-
 }
 
 #[hclua::lua_module(name = "engine_core")]
@@ -191,20 +182,41 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             "now_ms",
             hclua::function0(move || -> u64 { CoreUtils::now_ms() }),
         );
-        
-        table.set(
-            "lua_print",
-            hclua::function2(lua_print),
-        );
+
+        table.set("lua_print", hclua::function2(lua_print));
         table.set(
             "bind_listen",
-            hclua::function3(move |method: String, url: String, settings: Option<WrapSerde<Settings>>| -> i64 {
-                println!("settings = {:?}", settings);
+            hclua::function3(
+                move |method: String, url: String, settings: Option<WrapSerde<Settings>>| -> i64 {
+                    println!("settings = {:?}", settings);
+                    let session = (*service).node.next_seq() as i64;
+                    let id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
+                    tokio::spawn(async move {
+                        let _ = sender
+                            .send(HcMsg::net_create(id, session, method, url, settings))
+                            .await;
+                    });
+                    session
+                },
+            ),
+        );
+
+        table.set(
+            "close_socket",
+            hclua::function2(move |id: u64, reason: Option<String>| -> i64 {
                 let session = (*service).node.next_seq() as i64;
-                let id = (*service).get_id();
+                let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::net_create(id, session, method, url, Settings::default())).await;
+                    let _ = sender
+                        .send(HcMsg::net_close(
+                            id,
+                            service_id,
+                            reason.unwrap_or(String::new()),
+                        ))
+                        .await;
                 });
                 session
             }),

@@ -30,25 +30,30 @@ impl Handler for NetServer {
     }
 
     async fn on_accept(&mut self, conn: NetConn) -> NetResult<()> {
-        println!("on accept remote = {:?}", conn.remote_addr());
-        let server_id = self.id;
+        println!("on accept remote = {:?} id = {:?}", conn.remote_addr(), conn.get_connection_id());
+        let connect_id = self.id;
+        let service_id = self.service_id;
         let worker = self.worker.clone();
-        let (sender, receiver) = NetSender::new(10, 1);
+        let (mut sender, receiver) = NetSender::new(10, 1);
+        sender.set_connection_id(conn.get_connection_id());
         let _ = self
             .worker
             .sender
             .send(HcMsg::net_accept(NetInfo::new(
-                sender,
-                conn.get_connection_id(),
+                sender.clone(),
+                self.id,
                 self.service_id,
             )))
             .await;
+        let handler = CommonHandler {
+            sender,
+            connect_id,
+            service_id,
+            worker,
+        };
+
         let _ = conn
-            .run_handler(move |sender| CommonHandler {
-                sender,
-                server_id,
-                worker,
-            })
+            .run_with_handler(handler, receiver)
             .await;
         Ok(())
     }

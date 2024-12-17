@@ -1,6 +1,7 @@
 use std::ptr;
 
 use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
+use hcnet::NetConn;
 
 use crate::{core::msg::HcOper, luareg_engine_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject};
 
@@ -129,6 +130,16 @@ impl LuaService {
             let _: Option<()> = server.lua.exec_func("stop_world");
             let _ = Box::from_raw(service);
         }
+    }
+
+    pub fn accept_conn(&mut self, connect_id: u64, id: u64) {
+        println!("lua service call_msg ================ {:?} {:?}", connect_id, id);
+        let _: Option<()> = self.lua.read_func2("hc_accept_conn", connect_id, id);
+    }
+
+    pub fn close_conn(&mut self, connect_id: u64, id: u64, reason: &str) {
+        println!("lua service close_conn ================ {:?}", id);
+        let _: Option<()> = self.lua.read_func3("hc_close_conn", connect_id, id, reason);
     }
 
     pub fn call_msg(&mut self, msg: LuaMsg) {
