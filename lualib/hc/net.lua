@@ -31,17 +31,22 @@ hc.listen = function(method, url, settings, cb)
         return
     end
 
+    hc.print("id === %o", id)
     data_listen_cb[id] = cb
 end
 
 
-local function _net_on_accept_dispath(id, new_id)
-    hc.print("--------------- _net_on_accept_dispath = %o, %o", id, new_id)
+local function _net_on_accept_dispath(id, new_id, socket_addr)
+    hc.print("--------------- _net_on_accept_dispath = %o, %o, %o, %o", id, new_id, data_listen_cb[id], socket_addr)
     local callback = data_listen_cb[id]
-    if not callback or not callback["cb"] then
+    if not callback then
         hc.print("未设置处理回调函数，关闭连接:%o", new_id)
         hc.close_socket(new_id, "not callback");
         return
+    end
+    local on_accept = callback["on_accept"]
+    if on_accept then
+        on_accept(new_id, callback)
     end
     -- callback["on_accept"]
 end
@@ -49,7 +54,7 @@ end
 local function _net_on_close_dispath(id, new_id)
     hc.print("--------------- _net_on_close_dispath = %o, %o", id, new_id)
     local callback = data_listen_cb[id]
-    if not callback or not callback["cb"] then
+    if not callback then
         -- hc.close_socket(new_id, "already close");
         return
     end

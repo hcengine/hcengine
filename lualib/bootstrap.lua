@@ -75,9 +75,13 @@ hc.print("value = %o", hc.env("zz"))
 
 hc.async(function()
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)
-    local ret = hc.wait(hc.bind_listen("tcp", "0.0.0.0:2003", {
+    local ret = hc.wait(hc.listen("tcp", "0.0.0.0:2003", {
         max_connections = 1025,
         cert = "key/xx.pem",
+    }, {
+        on_accept = function(new_id, cb)
+            hc.print("id === %o", new_id)
+        end,
     }))
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)
 end)

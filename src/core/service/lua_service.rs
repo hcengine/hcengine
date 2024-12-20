@@ -1,4 +1,4 @@
-use std::ptr;
+use std::{net::SocketAddr, ptr};
 
 use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
 use hcnet::NetConn;
@@ -132,9 +132,9 @@ impl LuaService {
         }
     }
 
-    pub fn accept_conn(&mut self, connect_id: u64, id: u64) {
+    pub fn accept_conn(&mut self, connect_id: u64, id: u64, socket_addr: Option<SocketAddr>) {
         println!("lua service call_msg ================ {:?} {:?}", connect_id, id);
-        let _: Option<()> = self.lua.read_func2("hc_accept_conn", connect_id, id);
+        let _: Option<()> = self.lua.read_func3("hc_accept_conn", connect_id, id, socket_addr);
     }
 
     pub fn close_conn(&mut self, connect_id: u64, id: u64, reason: &str) {

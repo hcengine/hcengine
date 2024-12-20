@@ -30,7 +30,11 @@ impl Handler for NetServer {
     }
 
     async fn on_accept(&mut self, conn: NetConn) -> NetResult<()> {
-        println!("on accept remote = {:?} id = {:?}", conn.remote_addr(), conn.get_connection_id());
+        println!(
+            "on accept remote = {:?} id = {:?}",
+            conn.remote_addr(),
+            conn.get_connection_id()
+        );
         let connect_id = self.id;
         let service_id = self.service_id;
         let worker = self.worker.clone();
@@ -43,6 +47,7 @@ impl Handler for NetServer {
                 sender.clone(),
                 self.id,
                 self.service_id,
+                conn.remote_addr(),
             )))
             .await;
         let handler = CommonHandler {
@@ -52,9 +57,7 @@ impl Handler for NetServer {
             worker,
         };
 
-        let _ = conn
-            .run_with_handler(handler, receiver)
-            .await;
+        let _ = conn.run_with_handler(handler, receiver).await;
         Ok(())
     }
 

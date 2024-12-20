@@ -168,7 +168,7 @@ impl HcWorker {
         if let Some(service) = self.services.get_mut(&con.service_id) {
             unsafe {
                 if (*service.0).is_ok() {
-                    (*service.0).accept_conn(con.connect_id, con.sender.get_connection_id());
+                    (*service.0).accept_conn(con.connect_id, con.sender.get_connection_id(), con.socket_addr);
                 }
             }
         }
