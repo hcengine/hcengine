@@ -6,6 +6,8 @@ use log::{debug, error, info, trace, warn};
 
 use crate::{Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
 
+use super::WrapMessage;
+
 extern "C" fn get_env(lua: *mut lua_State) -> hclua::c_int {
     unsafe {
         let service = LuaService::get(lua);
@@ -221,6 +223,28 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 session
             }),
         );
+        
+        table.set(
+            "send_msg",
+            hclua::function2(move |id: u64, msg: &mut WrapMessage| -> i64 {
+                println!("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {}", id);
+                let msg = Box::from_raw(msg);
+                let session = (*service).node.next_seq() as i64;
+                let service_id = (*service).get_id();
+                let sender = (*service).worker.sender.clone();
+                tokio::spawn(async move {
+                    let _ = sender
+                        .send(HcMsg::send_msg(
+                            id,
+                            service_id,
+                            *msg,
+                        ))
+                        .await;
+                });
+                session
+            }),
+        );
+        
         // 获取环境变量
         table.register("env", get_env);
         Some(table)

@@ -15,6 +15,8 @@ local function watch(value, prefix, stack)
         return (value and "true" or "false")
     elseif type(value) == "number" then
         return tostring(value)
+    elseif type(value) == "userdata" then
+        return tostring(value)
     elseif type(value) == "table" then
         local result = ""
         local sign = true

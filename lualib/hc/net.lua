@@ -2,6 +2,7 @@
 local core = require("engine.core")
 
 local _bind_listen = core.bind_listen
+local _send_msg = core.send_msg
 
 local data_listen_cb = {}
 
@@ -35,7 +36,6 @@ hc.listen = function(method, url, settings, cb)
     data_listen_cb[id] = cb
 end
 
-
 local function _net_on_accept_dispath(id, new_id, socket_addr)
     hc.print("--------------- _net_on_accept_dispath = %o, %o, %o, %o", id, new_id, data_listen_cb[id], socket_addr)
     local callback = data_listen_cb[id]
@@ -61,5 +61,30 @@ local function _net_on_close_dispath(id, new_id)
     -- callback["on_accept"]
 end
 
-_G["hc_accept_conn"] = _net_on_accept_dispath
-_G["hc_close_conn"] = _net_on_close_dispath
+--- @param id integer
+--- @param msg NetMsg
+local function _net_on_msg(id, msg)
+    hc.print("--------------- _net_on_msg = %o, t = %o msg = %o", id, msg:get_type(), msg)
+    hc.print("string = %o", msg:get_string())
+    hc.print("NetMsg = %o", NetMsg)
+    local send = NetMsg.pack_text(string.format("from lua %s", msg:get_string()))
+    local meta = getmetatable(send)
+    hc.print("send = %o meta = %o", send, meta)
+    NetMsg.del(msg)
+    local meta = getmetatable(send)
+    hc.print("send1 = %o meta = %o", send, meta)
+    hc.print("del end!!!!!!!!!!!!!!!")
+    hc.send_msg(id, send)
+    hc.print("send end!!!!!!!!!!!!!!!")
+    local callback = data_listen_cb[id]
+    if not callback then
+        -- hc.close_socket(new_id, "already close");
+        return
+    end
+    -- callback["on_accept"]
+end
+
+
+_G["hc_net_accept_conn"] = _net_on_accept_dispath
+_G["hc_net_close_conn"] = _net_on_close_dispath
+_G["hc_net_msg"] = _net_on_msg

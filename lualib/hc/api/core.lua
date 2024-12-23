@@ -70,4 +70,9 @@ function core.bind_listen(method, url, settings) end
 function core.close_socket(id, reason) end
 
 
+--- 发送消息
+--- @param id integer
+--- @param msg NetMsg
+function core.send_msg(id, msg) end
+
 return core

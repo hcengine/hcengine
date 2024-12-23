@@ -1,4 +1,4 @@
 
 mod msg;
 
-pub use msg::WarpMessage;
+pub use msg::WrapMessage;

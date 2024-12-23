@@ -13,7 +13,7 @@ use crate::{
         msg::{HcNet, HcOper, LuaMsg, NewServer},
         HcMsg,
     },
-    Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf, ServiceWrapper,
+    Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf, ServiceWrapper, WrapMessage,
 };
 
 use super::HcWorkerState;
@@ -51,8 +51,10 @@ impl HcWorker {
             HcMsg::Msg(message) => todo!(),
             HcMsg::Net(msg) => match msg {
                 HcNet::NewServer(server) => self.new_conn(server).await,
-                HcNet::AcceptConn(info) => self.accept_conn(info).await,
-                HcNet::CloseConn(id, service_id, reason) => self.close_conn(id, service_id, reason).await,
+                HcNet::AcceptConn(info) => self.net_accept_conn(info).await,
+                HcNet::CloseConn(id, service_id, reason) => self.net_close_conn(id, service_id, reason).await,
+                HcNet::SendMsg(id, service_id, msg) => self.send_msg(id, service_id, msg).await,
+                HcNet::RecvMsg(id, service_id, msg) => self.recv_msg(id, service_id, msg).await,
                 _ => {
                     todo!()
                 }
@@ -163,27 +165,44 @@ impl HcWorker {
             .await;
     }
 
-    pub async fn accept_conn(&mut self, con: NetInfo) {
+    pub async fn net_accept_conn(&mut self, con: NetInfo) {
         
         if let Some(service) = self.services.get_mut(&con.service_id) {
             unsafe {
                 if (*service.0).is_ok() {
-                    (*service.0).accept_conn(con.connect_id, con.sender.get_connection_id(), con.socket_addr);
+                    (*service.0).net_accept_conn(con.connect_id, con.sender.get_connection_id(), con.socket_addr);
                 }
             }
         }
         self.net_clients.insert(con.sender.get_connection_id(), con);
     }
 
-    pub async fn close_conn(&mut self, id: u64, _service_id: u32, reason: String) {
+    pub async fn net_close_conn(&mut self, id: u64, _service_id: u32, reason: String) {
         println!("close conn ==== {:?} ", id);
         if let Some(mut info) = self.net_clients.remove(&id) {
             if let Some(service) = self.services.get_mut(&info.service_id) {
                 unsafe {
                     if (*service.0).is_ok() {
-                        (*service.0).close_conn(info.connect_id, id, &reason);
+                        (*service.0).net_close_conn(info.connect_id, id, &reason);
                     }
                     let _ = info.sender.close_with_reason(hcnet::CloseCode::Normal, reason);
+                }
+            }
+        }
+    }
+
+    pub async fn send_msg(&mut self, id: u64, _service_id: u32, msg: WrapMessage) {
+        if let Some(info) = self.net_clients.get_mut(&id) {
+            let _ = info.sender.send_message(msg.msg);
+        }
+    }
+
+    pub async fn recv_msg(&mut self, id: u64, service_id: u32, msg: WrapMessage) {
+        println!("net_msg ==== {:?} ", id);
+        if let Some(service) = self.services.get_mut(&service_id) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).recv_msg(id, msg);
                 }
             }
         }

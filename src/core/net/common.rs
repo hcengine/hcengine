@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use hcnet::{CloseCode, Handler, Message, NetResult, NetSender};
 use log::trace;
 
-use crate::{HcMsg, HcNodeState, HcWorkerState, NetInfo};
+use crate::{HcMsg, HcNodeState, HcWorkerState, NetInfo, WrapMessage};
 
 pub struct CommonHandler {
     pub sender: NetSender,
@@ -15,11 +15,20 @@ pub struct CommonHandler {
 impl Handler for CommonHandler {
     async fn on_message(&mut self, msg: Message) -> NetResult<()> {
         println!("server read !!!!!!!!! receiver msg = {:?}", msg);
-        match msg {
-            Message::Text(_) => self.sender.send_message(msg)?,
-            Message::Binary(_) => self.sender.send_message(msg)?,
-            _ => {}
-        }
+        // match msg {
+        //     Message::Text(_) => self.sender.send_message(msg)?,
+        //     Message::Binary(_) => self.sender.send_message(msg)?,
+        //     _ => {}
+        // }
+        let _ = self
+            .worker
+            .sender
+            .send(HcMsg::recv_msg(
+                self.sender.get_connection_id(),
+                self.service_id,
+                WrapMessage::new(msg),
+            ))
+            .await;
         Ok(())
     }
 
