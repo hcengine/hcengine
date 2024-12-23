@@ -1,4 +1,4 @@
 
-mod msg;
+mod net_msg;
 
-pub use msg::WrapMessage;
+pub use net_msg::WrapMessage;

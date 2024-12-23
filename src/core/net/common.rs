@@ -49,4 +49,34 @@ impl Handler for CommonHandler {
             ))
             .await;
     }
+
+    /// ping消息收到, 将会自动返回pong消息
+    async fn on_ping(&mut self, data: Vec<u8>) -> NetResult<Option<Vec<u8>>> {
+        trace!("on_ping");
+        let _ = self
+            .worker
+            .sender
+            .send(HcMsg::recv_msg(
+                self.sender.get_connection_id(),
+                self.service_id,
+                WrapMessage::new(Message::Ping(data)),
+            ))
+            .await;
+        Ok(None)
+    }
+
+    /// pong消息
+    async fn on_pong(&mut self, data: Vec<u8>) -> NetResult<()> {
+        trace!("on_pong");
+        let _ = self
+            .worker
+            .sender
+            .send(HcMsg::recv_msg(
+                self.sender.get_connection_id(),
+                self.service_id,
+                WrapMessage::new(Message::Pong(data)),
+            ))
+            .await;
+        Ok(())
+    }
 }

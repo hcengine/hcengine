@@ -75,6 +75,8 @@ end
 
 hc.bootstrap_id = 1
 
+
+
 hc.async = function(fn, ...)
     local co = table.remove(co_pool) or co_create(routine)
     wrap_co_resume(co, fn, ...)
