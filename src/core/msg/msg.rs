@@ -27,6 +27,7 @@ pub enum HcNet {
     SendMsg(u64, u32, WrapMessage),
     RecvMsg(u64, u32, WrapMessage),
     CloseConn(u64, u32, String),
+    OpenConn(u64, u32),
 }
 
 pub enum HcMsg {
@@ -103,5 +104,9 @@ impl HcMsg {
 
     pub fn net_close(id: u64, service_id: u32, reason: String) -> Self {
         HcMsg::Net(HcNet::CloseConn(id, service_id, reason))
+    }
+
+    pub fn net_open(id: u64, service_id: u32) -> Self {
+        HcMsg::Net(HcNet::OpenConn(id, service_id))
     }
 }

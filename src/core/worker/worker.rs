@@ -53,6 +53,7 @@ impl HcWorker {
                 HcNet::NewServer(server) => self.new_conn(server).await,
                 HcNet::AcceptConn(info) => self.net_accept_conn(info).await,
                 HcNet::CloseConn(id, service_id, reason) => self.net_close_conn(id, service_id, reason).await,
+                HcNet::OpenConn(id, service_id) => self.net_open_conn(id, service_id).await,
                 HcNet::SendMsg(id, service_id, msg) => self.send_msg(id, service_id, msg).await,
                 HcNet::RecvMsg(id, service_id, msg) => self.recv_msg(id, service_id, msg).await,
                 _ => {
@@ -186,6 +187,18 @@ impl HcWorker {
                         (*service.0).net_close_conn(info.connect_id, id, &reason);
                     }
                     let _ = info.sender.close_with_reason(hcnet::CloseCode::Normal, reason);
+                }
+            }
+        }
+    }
+
+    
+    pub async fn net_open_conn(&mut self, id: u64, service_id: u32) {
+        println!("open conn ==== {:?} ", id);
+        if let Some(service) = self.services.get_mut(&service_id) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).net_open_conn(id);
                 }
             }
         }

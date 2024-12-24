@@ -3,7 +3,7 @@ use std::mem;
 use hclua::{Lua, LuaObject, ObjectMacro, RawString};
 use hcnet::Message;
 
-#[derive(ObjectMacro)]
+#[derive(ObjectMacro, Clone)]
 #[hclua_cfg(name = NetMsg)]
 #[hclua_cfg(light)]
 pub struct WrapMessage {
@@ -59,6 +59,10 @@ impl WrapMessage {
         return Some(RawString(data))
     }
 
+    pub fn clone_msg(&self) -> Self {
+        self.clone()
+    }
+
     pub fn pack_text(text: String) -> Self {
         WrapMessage::new(Message::Text(text))
     }
@@ -81,6 +85,7 @@ impl WrapMessage {
         LuaObject::<WrapMessage>::object_def(lua, "get_string", hclua::function1(Self::get_string));
         WrapMessage::object_def(lua, "get_lstring", hclua::function1(Self::get_lstring));
         WrapMessage::object_def(lua, "take_data", hclua::function1(Self::take_data));
+        WrapMessage::object_def(lua, "clone_msg", hclua::function1(Self::clone_msg));
         WrapMessage::object_static_def(lua, "pack_text", hclua::function1(Self::pack_text));
         WrapMessage::object_static_def(lua, "pack_binary", hclua::function1(Self::pack_binary));
         WrapMessage::object_static_def(lua, "pack_ping", hclua::function1(Self::pack_ping));

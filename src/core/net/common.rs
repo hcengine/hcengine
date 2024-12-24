@@ -13,6 +13,20 @@ pub struct CommonHandler {
 
 #[async_trait]
 impl Handler for CommonHandler {
+    /// 此接口在可以发送消息时触发
+    /// 例如websocket将在握手成功后触发该函数
+    async fn on_open(&mut self) -> NetResult<()> {
+        let _ = self
+            .worker
+            .sender
+            .send(HcMsg::net_open(
+                self.sender.get_connection_id(),
+                self.service_id,
+            ))
+            .await;
+        Ok(())
+    }
+
     async fn on_message(&mut self, msg: Message) -> NetResult<()> {
         println!("server read !!!!!!!!! receiver msg = {:?}", msg);
         // match msg {

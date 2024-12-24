@@ -143,6 +143,11 @@ impl LuaService {
         let _: Option<()> = self.lua.read_func3("hc_net_close_conn", connect_id, id, reason);
     }
 
+    pub fn net_open_conn(&mut self, id: u64) {
+        println!("lua service open_conn ================ {:?}", id);
+        let _: Option<()> = self.lua.read_func1("hc_net_open_conn", id);
+    }
+
     pub fn recv_msg(&mut self, id: u64, msg: WrapMessage) {
         println!("lua service net_msg ================ {:?}", id);
         let _: Option<()> = self.lua.read_func2("hc_net_msg", id, msg);

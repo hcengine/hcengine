@@ -75,12 +75,26 @@ local hc2 = require("lualib.hc")
 
 hc.async(function()
     -- hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)
-    local ret = hc.wait(hc.listen("tcp", "0.0.0.0:2003", {
+    local ret = hc.wait(hc.listen("ws", "0.0.0.0:2003", {
         max_connections = 1025,
-        cert = "key/xx.pem",
+        -- cert = "key/xx.pem",
     }, {
-        on_accept = function(new_id, cb)
+        on_accept = function(new_id)
             hc.print("id === %o", new_id)
+            return {
+                on_msg = function(id, msg)
+                    hc.print("on_accept ret callback on_msg === %o, msg = %o", id, msg:get_string())
+                    hc.send_msg(id, NetMsg.pack_text(msg:get_string()))
+                end,
+                on_close = function(id)
+                    hc.print("on_accept ret on close!!!!!!!!!! %o", id)
+                end
+            }
+        end,
+        on_msg = function(id, msg)
+            hc.print("on_msg === %o, msg = %o", id, msg:get_string())
+            hc.send_msg(id, msg)
+            return true
         end,
     }))
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)

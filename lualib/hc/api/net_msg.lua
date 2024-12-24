@@ -16,6 +16,9 @@ function NetMsg:get_lstring() end
 ---@return string
 function NetMsg:take_data() end
 
+---@return NetMsg
+function NetMsg:clone_msg() end
+
 ---@param text string
 ---@return NetMsg
 function NetMsg.pack_text(text) end
