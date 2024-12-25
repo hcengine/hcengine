@@ -37,6 +37,7 @@ impl WrapMessage {
 
     pub fn get_lstring(&self) -> Option<RawString> {
         match &self.msg {
+            Message::Text(v) => return Some(RawString(v.as_bytes().to_vec())),
             Message::Binary(v) => return Some(RawString(v.clone())),
             Message::Ping(v) => return Some(RawString(v.clone())),
             Message::Pong(v) => return Some(RawString(v.clone())),
@@ -49,6 +50,7 @@ impl WrapMessage {
         let mut msg = Message::Unvaid;
         mem::swap(&mut msg, &mut self.msg);
         let data = match msg {
+            Message::Text(v) => v.into_bytes(),
             Message::Binary(v) => v.clone(),
             Message::Ping(v) => v.clone(),
             Message::Pong(v) => v.clone(),

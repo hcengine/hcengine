@@ -123,7 +123,7 @@ local function _wrap_net_on_msg(id, msg)
         end
         return
     elseif t == hc.NET_TEXT or t == hc.NET_BINARY then
-        hc.print("pong!!!!!!!!!!!!!!!!! %o %o", msg, msg:get_lstring())
+        hc.print("msg !!!!!!!!!!!!!!!!! %o %o", msg, msg:get_lstring())
         local msg_cb = callback["on_msg"]
         if msg_cb then
             return msg_cb(id, msg)
