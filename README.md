@@ -13,9 +13,8 @@
     - Http（未实现）
 - 基于lua的coroutines异步实现
     - 定时器
-    - redis异步的driver
-    - mysql异步的driver
-    - 
-
+    - redis异步的driver(未)
+    - mysql异步的driver(未)
+    
 ## 快速开始
 

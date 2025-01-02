@@ -1,0 +1,27 @@
+[package]
+name = "hclua-socket"
+version = "0.1.10"
+authors = ["hpnlic <hpnlic@hotmail.com>"]
+description = "luasocket Bindings for Lua 5.3"
+repository = "https://github.com/hcengine/hcengine/luaext/"
+build = "build.rs"
+links = "hclua-socket"
+license = "MIT/Apache-2.0"
+
+[build-dependencies]
+cc = "1.1.30"
+
+[dependencies]
+libc = "^0.2"
+# td_rlua = "0.3.0"
+
+[dependencies.hclua]
+path = "../../../hclua"
+
+[features]
+lua54=["hclua/lua54"]
+lua53=["hclua/lua53"]
+lua52=["hclua/lua52"]
+lua51=["hclua/lua51"]
+luajit=["hclua/luajit"]
+luajit52=["hclua/luajit52"]
