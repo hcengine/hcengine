@@ -63,6 +63,13 @@ function core.env(arg) end
 --- @return integer
 function core.bind_listen(method, url, settings) end
 
+--- 发起连接
+--- @param method string
+--- @param url string
+--- @param settings table | nil
+--- @return integer
+function core.connect(method, url, settings) end
+
 
 --- 关闭连接
 --- @param id integer

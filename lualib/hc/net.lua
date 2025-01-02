@@ -2,6 +2,7 @@
 local core = require("engine.core")
 
 local _bind_listen = core.bind_listen
+local _connect = core.connect
 local _send_msg = core.send_msg
 
 local data_listen_cb = {}
@@ -19,8 +20,6 @@ hc.bind_listen = function(method, url, settings)
     return _bind_listen(method, url, settings or nil)
 end
 
-
-
 --- 绑定连接
 --- @param method string | "'ws'" | "'tcp'" | "'kcp'"
 --- @param url string
@@ -35,6 +34,28 @@ hc.listen = function(method, url, settings, cb)
 
     hc.print("id === %o", id)
     data_listen_cb[id] = cb
+    if cb["on_open"] then
+        cb["on_open"](id)
+    end
+    return id
+end
+
+--- 发起连接
+--- @param method string | "'ws'" | "'tcp'" | "'kcp'"
+--- @param url string
+--- @param settings table | nil
+--- @param cb net_cb 
+hc.connect = function(method, url, settings, cb)
+    local id = hc.wait(_connect(method, url, settings))
+    hc.print("hc.connect !!!!!!!!!!! = %o", id)
+    if not id then
+        return false
+    end
+
+    ready_connect_ids[id] = true
+    hc.print("connect id === %o", id)
+    data_listen_cb[id] = cb
+    return true, id
 end
 
 --- 发送消息

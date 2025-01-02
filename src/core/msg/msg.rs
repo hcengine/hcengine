@@ -21,8 +21,17 @@ pub struct NewServer {
     pub settings: Settings,
 }
 
+pub struct ConnectServer {
+    pub service_id: u32,
+    pub session_id: i64,
+    pub method: String,
+    pub url: String,
+    pub settings: Settings,
+}
+
 pub enum HcNet {
     NewServer(NewServer),
+    ConnectServer(ConnectServer),
     AcceptConn(NetInfo),
     SendMsg(u64, u32, WrapMessage),
     RecvMsg(u64, u32, WrapMessage),
@@ -82,6 +91,22 @@ impl HcMsg {
         settings: Settings,
     ) -> Self {
         HcMsg::Net(HcNet::NewServer(NewServer {
+            service_id,
+            session_id,
+            method,
+            url,
+            settings,
+        }))
+    }
+    
+    pub fn net_connect(
+        service_id: u32,
+        session_id: i64,
+        method: String,
+        url: String,
+        settings: Settings,
+    ) -> Self {
+        HcMsg::Net(HcNet::ConnectServer(ConnectServer {
             service_id,
             session_id,
             method,

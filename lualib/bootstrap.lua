@@ -73,9 +73,29 @@ local hc2 = require("lualib.hc")
 -- -- hc.print("valu = %o", hc.env("PATH"))
 -- hc.print("value = %o", hc.env("zz"))
 
+function do_connect()
+    hc.async(function ()
+        local id = hc.connect("ws", "ws://127.0.0.1:2003", {}, {
+            on_open=function (id)
+                hc.print("xxxxxxxxxxxxxx !!!!!!on_open id = %o", id);
+                hc.send_msg(id, NetMsg.pack_text("from connect"))
+            end,
+            on_msg=function (id, msg)
+                hc.print("xxxxxxxxxxxxxx !!!!!!on_msg id = %o msg = %o", id, msg:get_string());
+            end,
+            on_accept=function (id)
+                
+            end
+        });
+        if id == 0 then
+            hc.print("xxxxxxxxxxxxxx !!!!!!failed connect!");
+        end
+    end)
+end
+
 hc.async(function()
     -- hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)
-    local ret = hc.wait(hc.listen("ws", "0.0.0.0:2003", {
+    local ret = hc.listen("ws", "0.0.0.0:2003", {
         max_connections = 1025,
         cert = "key/xx.pem",
     }, {
@@ -99,7 +119,11 @@ hc.async(function()
             hc.send_msg(id, msg)
             return true
         end,
-    }))
+        on_open=function (id)
+            hc.print("service on open %o", id)
+            do_connect()
+        end
+    })
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)
     
     local send = NetMsg.pack_text(string.format("from lua %s", "a"))
@@ -109,4 +133,44 @@ hc.async(function()
     -- hc.send_msg1(send, 0)
     hc.print("xxxxxxxxxxxxxx")
     -- hc.send_msg(0, send)
+
 end)
+
+
+-- hc.async(function()
+--     -- hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)
+--     local ret = hc.wait(hc.listen("ws", "0.0.0.0:2003", {
+--         max_connections = 1025,
+--         cert = "key/xx.pem",
+--     }, {
+--         on_accept = function(new_id)
+--             hc.print("id === %o", new_id)
+--             return {
+--                 on_msg = function(id, msg)
+--                     hc.print("on_accept ret callback on_msg === %o, msg = %o", id, msg:get_string())
+--                     hc.send_msg(id, NetMsg.pack_text(msg:get_string() or "empty"))
+--                 end,
+--                 on_open = function(id)
+--                     hc.print("on_open ret on close!!!!!!!!!! %o", id)
+--                 end,
+--                 on_close = function(id)
+--                     hc.print("on_accept ret on close!!!!!!!!!! %o", id)
+--                 end,
+--             }
+--         end,
+--         on_msg = function(id, msg)
+--             hc.print("on_msg === %o, msg = %o", id, msg:get_string())
+--             hc.send_msg(id, msg)
+--             return true
+--         end,
+--     }))
+--     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)
+    
+--     local send = NetMsg.pack_text(string.format("from lua %s", "a"))
+--     local meta = getmetatable(send)
+--     hc.print("send = %o meta = %o", send, meta)
+--     hc.send_msg(0, send)
+--     -- hc.send_msg1(send, 0)
+--     hc.print("xxxxxxxxxxxxxx")
+--     -- hc.send_msg(0, send)
+-- end)

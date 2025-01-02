@@ -13,7 +13,9 @@ use crate::{
         msg::{HcNet, HcOper, LuaMsg, NewServer},
         HcMsg,
     },
-    Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf, ServiceWrapper, WrapMessage,
+    msg::ConnectServer,
+    CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf,
+    ServiceWrapper, WrapMessage,
 };
 
 use super::HcWorkerState;
@@ -51,8 +53,11 @@ impl HcWorker {
             HcMsg::Msg(message) => todo!(),
             HcMsg::Net(msg) => match msg {
                 HcNet::NewServer(server) => self.new_conn(server).await,
+                HcNet::ConnectServer(server) => self.do_connect(server).await,
                 HcNet::AcceptConn(info) => self.net_accept_conn(info).await,
-                HcNet::CloseConn(id, service_id, reason) => self.net_close_conn(id, service_id, reason).await,
+                HcNet::CloseConn(id, service_id, reason) => {
+                    self.net_close_conn(id, service_id, reason).await
+                }
                 HcNet::OpenConn(id, service_id) => self.net_open_conn(id, service_id).await,
                 HcNet::SendMsg(id, service_id, msg) => self.send_msg(id, service_id, msg).await,
                 HcNet::RecvMsg(id, service_id, msg) => self.recv_msg(id, service_id, msg).await,
@@ -166,12 +171,79 @@ impl HcWorker {
             .await;
     }
 
+    pub async fn do_connect(&mut self, server: ConnectServer) {
+        let conn = match &*server.method {
+            "ws" | "wss" => NetConn::ws_connect_with_settings(server.url, server.settings).await,
+            "kcp" => NetConn::kcp_connect_with_settings(server.url, server.settings).await,
+            _ => NetConn::tcp_connect_with_settings(server.url, server.settings).await,
+        };
+
+        let creator = server.service_id;
+        let session = server.session_id;
+        match conn {
+            Err(e) => {
+                let mut data = BinaryMut::new();
+                data.put_u64(0);
+                let _ = self
+                    .state
+                    .sender
+                    .send(HcMsg::RespMsg(LuaMsg {
+                        ty: Config::TY_INTEGER,
+                        sender: 0,
+                        receiver: creator,
+                        sessionid: session,
+                        err: Some(format!("{:?}", e)),
+                        data,
+                    }))
+                    .await;
+            }
+            Ok(conn) => {
+                let connect_id = conn.get_connection_id();
+                let (sender, receiver) = NetSender::new(10, connect_id);
+
+                let handler = CommonHandler {
+                    sender: sender.clone(),
+                    connect_id,
+                    service_id: server.service_id,
+                    worker: self.state.clone(),
+                };
+                self.net_clients.insert(connect_id, NetInfo {
+                    sender,
+                    connect_id,
+                    service_id: server.service_id,
+                    socket_addr: conn.remote_addr(),
+                });
+                tokio::spawn(async move {
+                    let _ = conn.run_with_handler(handler, receiver).await;
+                });
+                println!("creator service_id = {} session = {}", creator, session);
+                let mut data = BinaryMut::new();
+                data.put_u64(connect_id);
+                let _ = self
+                    .state
+                    .sender
+                    .send(HcMsg::RespMsg(LuaMsg {
+                        ty: Config::TY_INTEGER,
+                        sender: 0,
+                        receiver: creator,
+                        sessionid: session,
+                        err: None,
+                        data,
+                    }))
+                    .await;
+            }
+        }
+    }
+
     pub async fn net_accept_conn(&mut self, con: NetInfo) {
-        
         if let Some(service) = self.services.get_mut(&con.service_id) {
             unsafe {
                 if (*service.0).is_ok() {
-                    (*service.0).net_accept_conn(con.connect_id, con.sender.get_connection_id(), con.socket_addr);
+                    (*service.0).net_accept_conn(
+                        con.connect_id,
+                        con.sender.get_connection_id(),
+                        con.socket_addr,
+                    );
                 }
             }
         }
@@ -186,13 +258,14 @@ impl HcWorker {
                     if (*service.0).is_ok() {
                         (*service.0).net_close_conn(info.connect_id, id, &reason);
                     }
-                    let _ = info.sender.close_with_reason(hcnet::CloseCode::Normal, reason);
+                    let _ = info
+                        .sender
+                        .close_with_reason(hcnet::CloseCode::Normal, reason);
                 }
             }
         }
     }
 
-    
     pub async fn net_open_conn(&mut self, id: u64, service_id: u32) {
         println!("open conn ==== {:?} ", id);
         if let Some(service) = self.services.get_mut(&service_id) {

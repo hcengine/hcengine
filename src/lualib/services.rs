@@ -206,6 +206,24 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         );
 
         table.set(
+            "connect",
+            hclua::function3(
+                move |method: String, url: String, settings: Option<WrapSerde<Settings>>| -> i64 {
+                    println!("settings = {:?}", settings);
+                    let session = (*service).node.next_seq() as i64;
+                    let id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
+                    tokio::spawn(async move {
+                        let _ = sender
+                            .send(HcMsg::net_connect(id, session, method, url, settings))
+                            .await;
+                    });
+                    session
+                },
+            ),
+        );
+        table.set(
             "close_socket",
             hclua::function2(move |id: u64, reason: Option<String>| -> i64 {
                 let session = (*service).node.next_seq() as i64;
