@@ -55,6 +55,13 @@
 #endif
 
 #ifdef _MSC_VER
+#include <float.h>
+#define isinf(x) (!_finite(x))
+#define isnan _isnan
+#define strncasecmp _strnicmp
+#endif
+
+#ifdef _MSC_VER
 #define CJSON_EXPORT    __declspec(dllexport)
 #else
 #define CJSON_EXPORT    extern

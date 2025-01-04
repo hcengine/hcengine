@@ -3,5 +3,10 @@
         "undefined-env-child",
         "lowercase-global",
         "missing-return"
-    ]
+    ],
+    "files.associations": {
+        "*.lua": "lua",
+        "*.rs": "rust",
+        "float.h": "c"
+    }
 }

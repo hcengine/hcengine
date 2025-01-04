@@ -2,6 +2,17 @@ local hc = require("lualib.hc")
 local hc1 = require("lualib.hc")
 local hc2 = require("lualib.hc")
 
+local socket = require("socket")
+local http=require("socket.http");
+
+hc.print("socket = %o", socket)
+hc.print("http = %o", http)
+local sock = socket.bind("127.0.0.1", "8848")
+hc.print("sock = %o", sock)
+local n = sock:accept()
+hc.print("sock1 = %o", n)
+-- socket.bind("")
+
 -- local xx = {a=21, b=false, c = {
 --     d = "xxx",
 --     f = function() end
@@ -74,18 +85,15 @@ local hc2 = require("lualib.hc")
 -- hc.print("value = %o", hc.env("zz"))
 
 function do_connect()
-    hc.async(function ()
+    hc.async(function()
         local id = hc.connect("ws", "ws://127.0.0.1:2003", {}, {
-            on_open=function (id)
+            on_open = function(id)
                 hc.print("xxxxxxxxxxxxxx !!!!!!on_open id = %o", id);
                 hc.send_msg(id, NetMsg.pack_text("from connect"))
             end,
-            on_msg=function (id, msg)
+            on_msg = function(id, msg)
                 hc.print("xxxxxxxxxxxxxx !!!!!!on_msg id = %o msg = %o", id, msg:get_string());
             end,
-            on_accept=function (id)
-                
-            end
         });
         if id == 0 then
             hc.print("xxxxxxxxxxxxxx !!!!!!failed connect!");
@@ -119,13 +127,13 @@ hc.async(function()
             hc.send_msg(id, msg)
             return true
         end,
-        on_open=function (id)
+        on_open = function(id)
             hc.print("service on open %o", id)
             do_connect()
         end
     })
     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)
-    
+
     local send = NetMsg.pack_text(string.format("from lua %s", "a"))
     local meta = getmetatable(send)
     hc.print("send = %o meta = %o", send, meta)
@@ -133,7 +141,6 @@ hc.async(function()
     -- hc.send_msg1(send, 0)
     hc.print("xxxxxxxxxxxxxx")
     -- hc.send_msg(0, send)
-
 end)
 
 
@@ -165,7 +172,7 @@ end)
 --         end,
 --     }))
 --     hc.print("cxxxxxxxxxxxxxxxx ret = %d", ret)
-    
+
 --     local send = NetMsg.pack_text(string.format("from lua %s", "a"))
 --     local meta = getmetatable(send)
 --     hc.print("send = %o meta = %o", send, meta)

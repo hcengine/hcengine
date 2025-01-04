@@ -77,7 +77,11 @@ impl LuaService {
             WrapMessage::register_all(&mut self.lua);
             ProtocolObject::register_all(&mut self.lua);
 
+            hclua_cjson::enable_cjson(&mut self.lua);
+            hclua_socket::enable_socket_core(&mut self.lua);
+
             self.lua.add_path(false, "lualib".to_string());
+            self.lua.add_path(false, "luaext".to_string());
             self.lua.add_path(false, "game".to_string());
 
             let lua = self.lua.state();

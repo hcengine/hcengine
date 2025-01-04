@@ -14,6 +14,9 @@ fn main() {
         build.file("luasocket/src/wsocket.c");
     }
 
+    
+    build.file("luasocket/src/mime.c");
+
         build.file("luasocket/src/auxiliar.c")
         .file("luasocket/src/buffer.c")
         .file("luasocket/src/compat.c")

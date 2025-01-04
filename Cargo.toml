@@ -11,6 +11,8 @@ keywords = ["hcnet"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+
 [dependencies]
 tokio = { version = "1.40.0", features = ["full"] }
 lazy_static = "1.5.0"
@@ -21,6 +23,9 @@ log = "0.4.22"
 algorithm = "0.1.16"
 hcnet = { path = "../hcnet" }
 hclua = { path = "../hclua", features = ["lua53"] }
+hclua-cjson = { features = ["lua53"], path = "./luac/hclua-cjson" }
+hclua-socket = { features = ["lua53"], path = "./luac/hclua-socket" }
+
 hcproto = { path = "../hcproto/Rust" }
 
 async-trait = "0.1.83"
@@ -38,3 +43,6 @@ bpaf = { version = "0.9.8", features = [
     "batteries",
     "autocomplete",
 ] }
+
+# [workspace]
+# members = ["hclua-cjson", "hclua-socket"]
