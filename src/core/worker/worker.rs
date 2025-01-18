@@ -167,6 +167,7 @@ impl HcWorker {
                 sessionid: session,
                 err: None,
                 data,
+                .. Default::default()
             }))
             .await;
     }
@@ -194,6 +195,7 @@ impl HcWorker {
                         sessionid: session,
                         err: Some(format!("{:?}", e)),
                         data,
+                        .. Default::default()
                     }))
                     .await;
             }
@@ -229,6 +231,7 @@ impl HcWorker {
                         sessionid: session,
                         err: None,
                         data,
+                        .. Default::default()
                     }))
                     .await;
             }
@@ -311,6 +314,7 @@ impl HcWorker {
                     sessionid: session,
                     err: Some(format!("存在相同的服务{}", conf.name)),
                     data,
+                    .. Default::default()
                 }))
                 .await;
             return;
@@ -343,6 +347,7 @@ impl HcWorker {
                         sessionid: session,
                         err: None,
                         data,
+                        .. Default::default()
                     }))
                     .await;
             }
@@ -379,6 +384,7 @@ impl HcWorker {
                         sessionid: session,
                         err: None,
                         data,
+                        .. Default::default()
                     }))
                     .await;
             }

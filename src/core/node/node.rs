@@ -251,6 +251,7 @@ impl HcNode {
                                 err: None,
                                 sessionid: 0,
                                 data,
+                                .. Default::default()
                             }))
                             .await;
                     }

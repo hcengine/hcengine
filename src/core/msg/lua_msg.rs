@@ -1,5 +1,7 @@
 use algorithm::buf::{BinaryMut, Bt, BtMut};
-use hclua::{lua_State, Lua, LuaObject, ObjectMacro};
+use hclua::{lua_State, Lua, LuaObject, LuaPush, ObjectMacro};
+
+use super::WrapperLuaMsg;
 
 #[derive(Default, ObjectMacro)]
 #[hclua_cfg(name = LuaMsg)]
@@ -12,6 +14,9 @@ pub struct LuaMsg {
     pub err: Option<String>,
     #[hclua_skip]
     pub data: BinaryMut,
+    #[hclua_skip]
+    // pub obj: Option<Box<()>>,
+    pub obj: Option<WrapperLuaMsg>,
 }
 
 impl LuaMsg {
@@ -23,6 +28,7 @@ impl LuaMsg {
             sessionid: 0,
             err: None,
             data,
+            obj: None,
         }
     }
 
@@ -34,7 +40,7 @@ impl LuaMsg {
         LuaObject::<LuaMsg>::object_def(lua, "read_f32", hclua::function1(Self::read_f32));
         LuaObject::<LuaMsg>::object_def(lua, "read_f64", hclua::function1(Self::read_f64));
         LuaObject::<LuaMsg>::object_def(lua, "read_str", hclua::function1(Self::read_str));
-        
+
         LuaObject::<LuaMsg>::object_def(lua, "write_bool", hclua::function2(Self::write_bool));
         LuaObject::<LuaMsg>::object_def(lua, "write_u64", hclua::function2(Self::write_u64));
         LuaObject::<LuaMsg>::object_def(lua, "write_i64", hclua::function2(Self::write_i64));
@@ -42,7 +48,7 @@ impl LuaMsg {
         LuaObject::<LuaMsg>::object_def(lua, "write_f64", hclua::function2(Self::write_f64));
         LuaObject::<LuaMsg>::object_def(lua, "write_str", hclua::function2(Self::write_str));
     }
-    
+
     pub fn write_bool(&mut self, val: bool) {
         self.data.put_bool(val);
     }
@@ -50,7 +56,7 @@ impl LuaMsg {
     pub fn read_bool(&mut self) -> Option<bool> {
         self.data.try_get_bool().ok()
     }
-    
+
     pub fn write_u64(&mut self, val: u64) {
         self.data.put_u64(val);
     }
@@ -58,7 +64,7 @@ impl LuaMsg {
     pub fn read_u64(&mut self) -> Option<u64> {
         self.data.try_get_u64().ok()
     }
-    
+
     pub fn write_i64(&mut self, val: i64) {
         self.data.put_i64(val);
     }
@@ -89,5 +95,12 @@ impl LuaMsg {
 
     pub fn read_str(&mut self) -> Option<String> {
         hcproto::decode_string(&mut self.data).ok()
+    }
+
+    extern "C" fn read_obj(lua: *mut lua_State) -> libc::c_int {
+        let msg: &mut LuaMsg = unwrap_or!(hclua::read_userdata(lua, 1), return 0);
+        let obj = unwrap_or!(msg.obj.take(), return 0);
+        obj.push_to_lua(lua);
+        0
     }
 }

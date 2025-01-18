@@ -44,5 +44,6 @@ bpaf = { version = "0.9.8", features = [
     "autocomplete",
 ] }
 
+webparse = "0.3.0"
 # [workspace]
 # members = ["hclua-cjson", "hclua-socket"]
