@@ -4,7 +4,10 @@ use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject, WrapSerde};
 use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
-use crate::{Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf};
+use crate::{
+    http::HttpServer, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper,
+    TimerConf,
+};
 
 use super::WrapMessage;
 
@@ -197,7 +200,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                     let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
                     tokio::spawn(async move {
                         let _ = sender
-                            .send(HcMsg::net_create(id, session, method, url, settings))
+                            .send(HcMsg::net_listen(id, session, method, url, settings))
                             .await;
                     });
                     session
@@ -241,7 +244,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 session
             }),
         );
-        
+
         table.set(
             "send_msg",
             hclua::function2(move |id: u64, msg: &mut WrapMessage| -> i64 {
@@ -251,18 +254,29 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
-                    let _ = sender
-                        .send(HcMsg::send_msg(
-                            id,
-                            service_id,
-                            *msg,
-                        ))
-                        .await;
+                    let _ = sender.send(HcMsg::send_msg(id, service_id, *msg)).await;
                 });
                 session
             }),
         );
-        
+
+        table.set(
+            "bind_http",
+            hclua::function2(move |id: i64, addr: String| -> i64 {
+                let session = (*service).node.next_seq() as i64;
+                let id = (*service).get_id();
+                let sender = (*service).worker.sender.clone();
+                tokio::spawn(async move {
+                    let _ = sender.send(HcMsg::http_listen(id, session, addr)).await;
+                });
+                session
+
+                // tokio::spawn(async move {
+                //     let _ = HttpServer::start_http(addr).await;
+                // });
+                // id
+            }),
+        );
         // table.set(
         //     "delay",
         //     hclua::function0(move || -> i64 {

@@ -143,6 +143,8 @@ hc.async(function()
     -- hc.send_msg(0, send)
 end)
 
+hc.bind_http(1, "0.0.0.0:8082")
+
 
 -- hc.async(function()
 --     -- hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)

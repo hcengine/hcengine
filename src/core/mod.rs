@@ -7,6 +7,7 @@ mod config;
 mod timer;
 mod utils;
 mod net;
+pub mod http;
 
 pub use msg::{HcMsg, LuaMsg, HcNet};
 pub use node::{HcNode, HcNodeState};

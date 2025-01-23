@@ -1,7 +1,7 @@
 use algorithm::{buf::BinaryMut, StampTimer};
 use hcnet::{Message, NetConn, NetSender, Settings};
 
-use crate::{LuaMsg, NetInfo, ServiceConf, TimerNode, WrapMessage};
+use crate::{core::http::HttpCommand, LuaMsg, NetInfo, ServiceConf, TimerNode, WrapMessage};
 
 pub enum HcOper {
     /// timer_id, TimerNode
@@ -13,7 +13,7 @@ pub enum HcOper {
     CloseService(u32),
 }
 
-pub struct NewServer {
+pub struct ListenServer {
     pub service_id: u32,
     pub session_id: i64,
     pub method: String,
@@ -30,7 +30,7 @@ pub struct ConnectServer {
 }
 
 pub enum HcNet {
-    NewServer(NewServer),
+    ListenServer(ListenServer),
     ConnectServer(ConnectServer),
     AcceptConn(NetInfo),
     SendMsg(u64, u32, WrapMessage),
@@ -39,9 +39,21 @@ pub enum HcNet {
     OpenConn(u64, u32),
 }
 
+pub struct ListenHttpServer {
+    pub service_id: u32,
+    pub session_id: i64,
+    pub url: String,
+}
+
+pub enum HcHttp {
+    ListenHttpServer(ListenHttpServer),
+    NewHttpConnect(HttpCommand),
+}
+
 pub enum HcMsg {
     Msg(Message),
     Net(HcNet),
+    Http(HcHttp),
     // NewService(ServiceConf),
     // Stop(i32),
     // CloseService(u32),
@@ -83,14 +95,14 @@ impl HcMsg {
         HcMsg::Oper(HcOper::TickTimer(service_id, timer_id, is_repeat))
     }
 
-    pub fn net_create(
+    pub fn net_listen(
         service_id: u32,
         session_id: i64,
         method: String,
         url: String,
         settings: Settings,
     ) -> Self {
-        HcMsg::Net(HcNet::NewServer(NewServer {
+        HcMsg::Net(HcNet::ListenServer(ListenServer {
             service_id,
             session_id,
             method,
@@ -98,7 +110,7 @@ impl HcMsg {
             settings,
         }))
     }
-    
+
     pub fn net_connect(
         service_id: u32,
         session_id: i64,
@@ -133,5 +145,13 @@ impl HcMsg {
 
     pub fn net_open(id: u64, service_id: u32) -> Self {
         HcMsg::Net(HcNet::OpenConn(id, service_id))
+    }
+
+    pub fn http_listen(service_id: u32, session_id: i64, url: String) -> Self {
+        HcMsg::Http(HcHttp::ListenHttpServer(ListenHttpServer {
+            service_id,
+            session_id,
+            url,
+        }))
     }
 }

@@ -82,4 +82,8 @@ function core.close_socket(id, reason) end
 --- @param msg NetMsg
 function core.send_msg(id, msg) end
 
+---@param id integer
+---@param addr string
+function core.bind_http(id, addr) end
+
 return core

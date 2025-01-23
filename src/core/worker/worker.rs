@@ -6,14 +6,18 @@ use algorithm::{
 };
 use hcnet::{NetConn, NetSender, Settings};
 use log::info;
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::{
+    net::TcpListener,
+    sync::mpsc::{channel, Receiver, Sender},
+};
 
 use crate::{
     core::{
-        msg::{HcNet, HcOper, LuaMsg, NewServer},
+        msg::{HcNet, HcOper, ListenServer, LuaMsg},
         HcMsg,
     },
-    msg::ConnectServer,
+    http::{HttpSender, HttpServer},
+    msg::{ConnectServer, HcHttp, ListenHttpServer},
     CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf,
     ServiceWrapper, WrapMessage,
 };
@@ -26,6 +30,8 @@ pub struct HcWorker {
     pub recv: Receiver<HcMsg>,
     pub node_state: HcNodeState,
     pub services: HashMap<u32, ServiceWrapper>,
+    pub http_servers: HashMap<u64, HttpSender>,
+    pub http_clients: HashMap<u64, HttpSender>,
     pub net_servers: HashMap<u64, NetSender>,
     pub net_clients: HashMap<u64, NetInfo>,
 }
@@ -43,6 +49,8 @@ impl HcWorker {
                 services: HashMap::new(),
                 net_servers: HashMap::new(),
                 net_clients: HashMap::new(),
+                http_servers: HashMap::new(),
+                http_clients: HashMap::new(),
             },
             state,
         )
@@ -52,7 +60,7 @@ impl HcWorker {
         match msg {
             HcMsg::Msg(message) => todo!(),
             HcMsg::Net(msg) => match msg {
-                HcNet::NewServer(server) => self.new_conn(server).await,
+                HcNet::ListenServer(server) => self.listen_conn(server).await,
                 HcNet::ConnectServer(server) => self.do_connect(server).await,
                 HcNet::AcceptConn(info) => self.net_accept_conn(info).await,
                 HcNet::CloseConn(id, service_id, reason) => {
@@ -61,6 +69,14 @@ impl HcWorker {
                 HcNet::OpenConn(id, service_id) => self.net_open_conn(id, service_id).await,
                 HcNet::SendMsg(id, service_id, msg) => self.send_msg(id, service_id, msg).await,
                 HcNet::RecvMsg(id, service_id, msg) => self.recv_msg(id, service_id, msg).await,
+                _ => {
+                    todo!()
+                }
+            },
+            HcMsg::Http(msg) => match msg {
+                HcHttp::ListenHttpServer(listen) => {
+                    self.listen_http(listen).await;
+                }
                 _ => {
                     todo!()
                 }
@@ -125,7 +141,7 @@ impl HcWorker {
         Ok(())
     }
 
-    pub async fn new_conn(&mut self, server: NewServer) {
+    pub async fn listen_conn(&mut self, server: ListenServer) {
         let conn = match &*server.method {
             "ws" => NetConn::ws_bind(server.url, server.settings).await.unwrap(),
             "wss" => {
@@ -167,7 +183,7 @@ impl HcWorker {
                 sessionid: session,
                 err: None,
                 data,
-                .. Default::default()
+                ..Default::default()
             }))
             .await;
     }
@@ -195,7 +211,7 @@ impl HcWorker {
                         sessionid: session,
                         err: Some(format!("{:?}", e)),
                         data,
-                        .. Default::default()
+                        ..Default::default()
                     }))
                     .await;
             }
@@ -209,12 +225,15 @@ impl HcWorker {
                     service_id: server.service_id,
                     worker: self.state.clone(),
                 };
-                self.net_clients.insert(connect_id, NetInfo {
-                    sender,
+                self.net_clients.insert(
                     connect_id,
-                    service_id: server.service_id,
-                    socket_addr: conn.remote_addr(),
-                });
+                    NetInfo {
+                        sender,
+                        connect_id,
+                        service_id: server.service_id,
+                        socket_addr: conn.remote_addr(),
+                    },
+                );
                 tokio::spawn(async move {
                     let _ = conn.run_with_handler(handler, receiver).await;
                 });
@@ -231,7 +250,7 @@ impl HcWorker {
                         sessionid: session,
                         err: None,
                         data,
-                        .. Default::default()
+                        ..Default::default()
                     }))
                     .await;
             }
@@ -297,6 +316,57 @@ impl HcWorker {
         }
     }
 
+    pub async fn listen_http(&mut self, server: ListenHttpServer) {
+        let l = match TcpListener::bind(server.url).await {
+            Ok(l) => l,
+            Err(e) => {
+                let mut data = BinaryMut::new();
+                data.put_u64(0);
+                let _ = self
+                    .state
+                    .sender
+                    .send(HcMsg::RespMsg(LuaMsg {
+                        ty: Config::TY_INTEGER,
+                        sender: 0,
+                        receiver: server.service_id,
+                        sessionid: server.session_id,
+                        err: Some(format!("{:?}", e)),
+                        data,
+                        ..Default::default()
+                    }))
+                    .await;
+                return;
+            }
+        };
+
+        let id = self.node_state.next_seq() as u64;
+        let (sender, receiver) = HttpSender::new(10, 1);
+        let con = HttpServer::new(id, server.service_id, self.state.clone());
+        
+        self.http_servers.insert(id, sender);
+        tokio::spawn(async move {
+            let _ = con.run_http(l, receiver).await;
+        });
+        let creator = server.service_id;
+        let session = server.session_id;
+        // println!("creator service_id = {} session = {}", creator, session);
+        let mut data = BinaryMut::new();
+        data.put_u64(id);
+        let _ = self
+            .state
+            .sender
+            .send(HcMsg::RespMsg(LuaMsg {
+                ty: Config::TY_INTEGER,
+                sender: 0,
+                receiver: creator,
+                sessionid: session,
+                err: None,
+                data,
+                ..Default::default()
+            }))
+            .await;
+    }
+
     pub async fn new_service(&mut self, conf: ServiceConf) {
         println!("new_service == {:?} id = {}", conf, self.state.woker_id());
         let creator = conf.creator;
@@ -314,7 +384,7 @@ impl HcWorker {
                     sessionid: session,
                     err: Some(format!("存在相同的服务{}", conf.name)),
                     data,
-                    .. Default::default()
+                    ..Default::default()
                 }))
                 .await;
             return;
@@ -347,7 +417,7 @@ impl HcWorker {
                         sessionid: session,
                         err: None,
                         data,
-                        .. Default::default()
+                        ..Default::default()
                     }))
                     .await;
             }
@@ -384,7 +454,7 @@ impl HcWorker {
                         sessionid: session,
                         err: None,
                         data,
-                        .. Default::default()
+                        ..Default::default()
                     }))
                     .await;
             }

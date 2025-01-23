@@ -22,13 +22,6 @@ impl WrapperRequest {
     }
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
-        LuaObject::<WrapperRequest>::object_def(
-            lua,
-            "is_http2",
-            hclua::function1(|obj: &mut WrapperRequest| {
-                obj.req.is_http2()
-            }),
-        );
 
         impl_obj_fn!(WrapperRequest, lua, req, is_http2);
     }
