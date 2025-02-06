@@ -10,6 +10,8 @@ use tokio::{
     net::TcpListener,
     sync::mpsc::{channel, Receiver, Sender},
 };
+use webparse::Response;
+use wmhttp::{Body, RecvRequest, RecvResponse};
 
 use crate::{
     core::{
@@ -30,7 +32,7 @@ pub struct HcWorker {
     pub recv: Receiver<HcMsg>,
     pub node_state: HcNodeState,
     pub services: HashMap<u32, ServiceWrapper>,
-    pub http_servers: HashMap<u64, HttpSender>,
+    pub http_servers: HashMap<u16, HttpSender>,
     pub http_clients: HashMap<u64, HttpSender>,
     pub net_servers: HashMap<u64, NetSender>,
     pub net_clients: HashMap<u64, NetInfo>,
@@ -76,6 +78,14 @@ impl HcWorker {
             HcMsg::Http(msg) => match msg {
                 HcHttp::ListenHttpServer(listen) => {
                     self.listen_http(listen).await;
+                }
+                HcHttp::HttpIncoming(service_id, id, req) => {
+                    // self.listen_http(listen).await;
+                    self.http_incoming(service_id, id, req).await;
+                }
+                HcHttp::HttpOutcoming(id, res) => {
+                    // self.listen_http(listen).await;
+                    self.http_outcoming(id, res).await;
                 }
                 _ => {
                     todo!()
@@ -299,6 +309,42 @@ impl HcWorker {
         }
     }
 
+    pub async fn http_incoming(&mut self, service_id: u32, id: u64, req: RecvRequest) {
+        println!("open conn ==== {:?} ", id);
+        if let Some(service) = self.services.get_mut(&service_id) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).http_incoming(id, req);
+                }
+            }
+        }
+
+        let mut builder = Response::builder().version(webparse::Version::Http11);
+        builder = builder.header("content-type", "text/plain; charset=utf-8");
+        let res = builder
+            .body(Body::new_text(format!("Hello, World! from response {}", (id as u32) & u32::MAX)))
+            .unwrap();
+        let msg = HcMsg::http_outcoming(id, res);
+        let _ = self.state.sender.send(msg).await;
+    }
+
+
+    pub async fn http_outcoming(&mut self, id: u64, res: RecvResponse) {
+        println!("http_outcoming ==== {:?} ", id);
+        let server_id = (id >> 32 & 0xFF) as u16;
+        if let Some(s) = self.http_servers.get_mut(&server_id) {
+            let _ = s.send_message(HcHttp::HttpOutcoming(id, res));
+        }
+        // let mut builder = Response::builder().version(webparse::Version::Http11);
+        // builder = builder.header("content-type", "text/plain; charset=utf-8");
+        // let res = builder
+        //     .body(Body::new_text("Hello, World! from response".to_string()))
+        //     .unwrap();
+        // let msg = HcMsg::http_outcoming(id, res);
+        // let _ = self.state.sender.send(msg).await;
+    }
+    
+
     pub async fn send_msg(&mut self, id: u64, _service_id: u32, msg: WrapMessage) {
         if let Some(info) = self.net_clients.get_mut(&id) {
             let _ = info.sender.send_message(msg.msg);
@@ -339,11 +385,35 @@ impl HcWorker {
             }
         };
 
-        let id = self.node_state.next_seq() as u64;
+        let mut http_id = 0;
+        for i in 1..u16::MAX {
+            if !self.http_servers.contains_key(&i) {
+                http_id = i;
+                break;
+            }
+        }
+        if http_id == 0 {
+            let mut data = BinaryMut::new();
+            data.put_u64(0);
+            let _ = self
+                .state
+                .sender
+                .send(HcMsg::RespMsg(LuaMsg {
+                    ty: Config::TY_INTEGER,
+                    sender: 0,
+                    receiver: server.service_id,
+                    sessionid: server.session_id,
+                    err: Some(format!("{:?}", "too many http server")),
+                    data,
+                    ..Default::default()
+                }))
+                .await;
+            return;
+        }
         let (sender, receiver) = HttpSender::new(10, 1);
-        let con = HttpServer::new(id, server.service_id, self.state.clone());
+        let con = HttpServer::new(http_id, server.service_id, self.state.clone(), sender.clone());
         
-        self.http_servers.insert(id, sender);
+        self.http_servers.insert(http_id, sender);
         tokio::spawn(async move {
             let _ = con.run_http(l, receiver).await;
         });
@@ -351,7 +421,7 @@ impl HcWorker {
         let session = server.session_id;
         // println!("creator service_id = {} session = {}", creator, session);
         let mut data = BinaryMut::new();
-        data.put_u64(id);
+        data.put_u64(http_id as u64);
         let _ = self
             .state
             .sender

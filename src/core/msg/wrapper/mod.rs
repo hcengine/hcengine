@@ -1,8 +1,8 @@
 use hclua::{impl_box_push, lua_State, LuaPush};
 mod request;
 mod response;
-use request::WrapperRequest;
-use response::WrapperResponse;
+pub use request::WrapperRequest;
+pub use response::WrapperResponse;
 
 pub enum WrapperLuaMsg {
     Request(WrapperRequest),

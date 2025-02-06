@@ -1,3 +1,4 @@
 use webparse::Response;
+use wmhttp::RecvResponse;
 
-pub struct WrapperResponse(Response<Vec<u8>>);
+pub struct WrapperResponse(RecvResponse);

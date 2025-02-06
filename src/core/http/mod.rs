@@ -3,24 +3,21 @@ use std::net::SocketAddr;
 use hcnet::{NetError, NetResult};
 use tokio::sync::mpsc::{channel, error::TrySendError, Sender};
 use webparse::{Request, Response};
-use wenmeng::{RecvRequest, RecvResponse};
+use wmhttp::{RecvRequest, RecvResponse};
 
 mod client;
 mod server;
 
 pub use server::HttpServer;
 
-#[derive(Debug)]
-pub enum HttpCommand {
-    Request(RecvRequest),
-    Response(RecvResponse),
-}
+use super::msg::HcHttp;
 
-pub type HttpReceiver = tokio::sync::mpsc::Receiver<HttpCommand>;
+
+pub type HttpReceiver = tokio::sync::mpsc::Receiver<HcHttp>;
 
 #[derive(Debug, Clone)]
 pub struct HttpSender {
-    sender: Sender<HttpCommand>,
+    sender: Sender<HcHttp>,
     id: u64,
 }
 
@@ -55,7 +52,7 @@ impl HttpSender {
         (HttpSender { sender, id }, rv)
     }
 
-    pub fn send_message(&mut self, msg: HttpCommand) -> NetResult<()> {
+    pub fn send_message(&mut self, msg: HcHttp) -> NetResult<()> {
         match self.sender.try_send(msg) {
             Ok(_) => return Ok(()),
             Err(e) => todo!(),

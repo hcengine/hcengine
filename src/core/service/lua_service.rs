@@ -2,8 +2,9 @@ use std::{net::SocketAddr, ptr};
 
 use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newthread, Lua};
 use hcnet::NetConn;
+use wmhttp::RecvRequest;
 
-use crate::{core::msg::HcOper, luareg_engine_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage};
+use crate::{core::msg::HcOper, luareg_engine_core, msg::WrapperRequest, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage};
 
 use super::ServiceConf;
 
@@ -150,6 +151,12 @@ impl LuaService {
     pub fn net_open_conn(&mut self, id: u64) {
         println!("lua service open_conn ================ {:?}", id);
         let _: Option<()> = self.lua.read_func1("hc_net_open_conn", id);
+    }
+
+    pub fn http_incoming(&mut self, id: u64, req: RecvRequest) {
+        println!("lua service open_conn ================ {:?}", id);
+        let r = WrapperRequest::new(req);
+        let _: Option<()> = self.lua.read_func2("hc_http_incoming", id, r);
     }
 
     pub fn recv_msg(&mut self, id: u64, msg: WrapMessage) {

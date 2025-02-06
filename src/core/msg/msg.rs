@@ -1,7 +1,8 @@
 use algorithm::{buf::BinaryMut, StampTimer};
 use hcnet::{Message, NetConn, NetSender, Settings};
+use wmhttp::{RecvRequest, RecvResponse};
 
-use crate::{core::http::HttpCommand, LuaMsg, NetInfo, ServiceConf, TimerNode, WrapMessage};
+use crate::{LuaMsg, NetInfo, ServiceConf, TimerNode, WrapMessage};
 
 pub enum HcOper {
     /// timer_id, TimerNode
@@ -45,9 +46,13 @@ pub struct ListenHttpServer {
     pub url: String,
 }
 
+pub struct IncomingHttp {}
+
 pub enum HcHttp {
     ListenHttpServer(ListenHttpServer),
-    NewHttpConnect(HttpCommand),
+    HttpIncoming(u32, u64, RecvRequest),
+    HttpOutcoming(u64, RecvResponse),
+    HttpClose(u32),
 }
 
 pub enum HcMsg {
@@ -153,5 +158,13 @@ impl HcMsg {
             session_id,
             url,
         }))
+    }
+
+    pub fn http_incoming(service_id: u32, http_id: u64, req: RecvRequest) -> Self {
+        HcMsg::Http(HcHttp::HttpIncoming(service_id, http_id, req))
+    }
+
+    pub fn http_outcoming(http_id: u64, res: RecvResponse) -> Self {
+        HcMsg::Http(HcHttp::HttpOutcoming(http_id, res))
     }
 }

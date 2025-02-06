@@ -4,6 +4,8 @@ require("hc.const")
 require("hc.timer")
 require("hc.trace")
 require("hc.net")
+require("hc.http")
+
 
 hc.init()
 return hc
