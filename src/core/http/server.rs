@@ -59,9 +59,10 @@ impl HttpTrait for Operate {
                 return Ok(v);
             }
             None => {
+                println!("recv ending");
                 builder = builder.header("content-type", "text/plain; charset=utf-8");
                 return builder
-                    .body(Body::new_text("Hello, World!".to_string()))
+                    .body(Body::new_text("Hello, World! not from ".to_string()))
                     .map_err(|e| ProtError::from(e));
             }
         };
@@ -69,7 +70,7 @@ impl HttpTrait for Operate {
     
     async fn close_connect(&mut self) {
         println!("close connect!!!");
-        self.sender.send_message(HcHttp::HttpClose(self.oper_id));
+        let _ = self.sender.send_message(HcHttp::HttpClose(self.oper_id));
     }
 
 }
@@ -80,6 +81,7 @@ pub struct HttpServer {
     next_id: AtomicU32,
     worker: HcWorkerState,
     sender: HttpSender,
+    /// todo! 按时间过期
     senders: HashMap<u32, Sender<RecvResponse>>,
 }
 
@@ -100,6 +102,7 @@ impl HttpServer {
         let next_id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let (sender, recv) = channel(1);
         self.senders.insert(next_id, sender);
+        println!("insert sender {next_id}");
         server.set_callback_http(Box::new(Operate {
             id: self.id,
             service_id: self.service_id,
@@ -123,12 +126,14 @@ impl HttpServer {
                         if let Some(v) = value {
                             match v {
                                 crate::msg::HcHttp::HttpClose(oper_id) => {
+                                    println!("remove http senders!!!!!!!!!! {oper_id} {}", self.senders.contains_key(&oper_id));
                                     self.senders.remove(&oper_id);
-                                    println!("remove http senders!!!!!!!!!!");
                                 },
                                 crate::msg::HcHttp::HttpOutcoming(id, res) => {
                                     let id = id as u32;
+                                    println!("send out  http senders!!!!!!!!!! {id} all len = {}", self.senders.len());
                                     if let Some(sender) = self.senders.get_mut(&id) {
+                                        println!("sucess out  http senders!!!!!!!!!! {id}");
                                         let _ = sender.try_send(res);
                                     }
                                 },

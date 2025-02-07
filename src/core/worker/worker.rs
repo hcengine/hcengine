@@ -324,8 +324,8 @@ impl HcWorker {
         let res = builder
             .body(Body::new_text(format!("Hello, World! from response {}", (id as u32) & u32::MAX)))
             .unwrap();
-        let msg = HcMsg::http_outcoming(id, res);
-        let _ = self.state.sender.send(msg).await;
+        // let msg = HcMsg::http_outcoming(id, res);
+        // let _ = self.state.sender.send(msg).await;
     }
 
 

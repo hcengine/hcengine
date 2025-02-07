@@ -5,8 +5,7 @@ use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    http::HttpServer, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper,
-    TimerConf,
+    http::HttpServer, msg::WrapperResponse, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf
 };
 
 use super::WrapMessage;
@@ -268,6 +267,25 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
                     let _ = sender.send(HcMsg::http_listen(id, session, addr)).await;
+                });
+                session
+
+                // tokio::spawn(async move {
+                //     let _ = HttpServer::start_http(addr).await;
+                // });
+                // id
+            }),
+        );
+
+        
+        table.set(
+            "send_response",
+            hclua::function2(move |id: u64, res: &mut WrapperResponse| -> i64 {
+                let session = (*service).node.next_seq() as i64;
+                let msg = Box::from_raw(res);
+                let sender = (*service).worker.sender.clone();
+                tokio::spawn(async move {
+                    let _ = sender.send(HcMsg::http_outcoming(id, msg.res)).await;
                 });
                 session
 

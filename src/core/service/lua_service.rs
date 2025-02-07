@@ -4,7 +4,7 @@ use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newt
 use hcnet::NetConn;
 use wmhttp::RecvRequest;
 
-use crate::{core::msg::HcOper, luareg_engine_core, msg::WrapperRequest, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage};
+use crate::{core::msg::HcOper, luareg_engine_core, msg::{WrapperRequest, WrapperResponse}, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage};
 
 use super::ServiceConf;
 
@@ -77,6 +77,8 @@ impl LuaService {
             LuaMsg::register_all(&mut self.lua);
             WrapMessage::register_all(&mut self.lua);
             ProtocolObject::register_all(&mut self.lua);
+            WrapperRequest::register_all(&mut self.lua);
+            WrapperResponse::register_all(&mut self.lua);
 
             hclua_cjson::enable_cjson(&mut self.lua);
             hclua_socket::enable_socket_core(&mut self.lua);

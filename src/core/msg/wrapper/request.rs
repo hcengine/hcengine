@@ -3,7 +3,7 @@ use webparse::Request;
 use wmhttp::{Body, RecvRequest};
 
 #[derive(ObjectMacro)]
-#[hclua_cfg(name = LuaMsg)]
+#[hclua_cfg(name = Request)]
 #[hclua_cfg(light)]
 pub struct WrapperRequest {
     #[hclua_skip]
