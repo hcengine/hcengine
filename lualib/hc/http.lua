@@ -9,6 +9,7 @@ local function _hc_http_incoming(id, req)
 
     local response = Response.new();
     response:set_text(string.format("from lua!!!!!! %d", id))
+    response:header_set("ok", "val")
     hc.send_response(id, response)
 end 
 

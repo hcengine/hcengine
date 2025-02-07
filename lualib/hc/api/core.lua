@@ -82,8 +82,14 @@ function core.close_socket(id, reason) end
 --- @param msg NetMsg
 function core.send_msg(id, msg) end
 
+--- 绑定HTTP服务器
 ---@param id integer
 ---@param addr string
 function core.bind_http(id, addr) end
+
+--- 返回http结果
+---@param id integer
+---@param res Response
+function core.send_response(id, res) end
 
 return core
