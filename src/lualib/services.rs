@@ -1,6 +1,6 @@
 use std::{sync::mpsc::channel, time::Duration};
 
-use hclua::{lua_State, Lua, LuaPush, LuaRead, LuaTable, WrapObject, WrapSerde};
+use hclua::{lua_State, values::WrapperObject, Lua, LuaPush, LuaRead, LuaTable, WrapObject, WrapSerde};
 use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
@@ -280,12 +280,11 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         
         table.set(
             "send_response",
-            hclua::function2(move |id: u64, res: &mut WrapperResponse| -> i64 {
+            hclua::function2(move |id: u64, res: WrapperObject<WrapperResponse>| -> i64 {
                 let session = (*service).node.next_seq() as i64;
-                let msg = Box::from_raw(res);
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::http_outcoming(id, msg.res)).await;
+                    let _ = sender.send(HcMsg::http_outcoming(id, res.0.r)).await;
                 });
                 session
 
