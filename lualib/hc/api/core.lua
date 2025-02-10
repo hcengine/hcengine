@@ -83,9 +83,8 @@ function core.close_socket(id, reason) end
 function core.send_msg(id, msg) end
 
 --- 绑定HTTP服务器
----@param id integer
 ---@param addr string
-function core.bind_http(id, addr) end
+function core.bind_http(addr) end
 
 --- 返回http结果
 ---@param id integer

@@ -26,17 +26,17 @@ impl WrapperResponse {
         Self::register(lua);
         type Object = WrapperResponse;
         // impl_obj_fn!(WrapperResponse, lua, res, header);
-        LuaObject::<Object>::object_def(lua, "status_code", hclua::function1(Self::status_code));
-        LuaObject::<Object>::object_def(lua, "set_status_code", hclua::function2(Self::set_status_code));
-        LuaObject::<Object>::object_def(lua, "status_str", hclua::function1(Self::status_str));
+        Object::object_static_def(lua, "status_code", hclua::function1(Self::status_code));
+        Object::object_static_def(lua, "set_status_code", hclua::function2(Self::set_status_code));
+        Object::object_static_def(lua, "status_str", hclua::function1(Self::status_str));
         
-        LuaObject::<Object>::object_def(lua, "version", hclua::function1(Self::version));
-        LuaObject::<Object>::object_def(lua, "set_text", hclua::function2(Self::set_text));
-        LuaObject::<Object>::object_def(lua, "header_get", hclua::function2(Self::header_get));
-        LuaObject::<Object>::object_def(lua, "header_set", hclua::function3(Self::header_set));
-        LuaObject::<Object>::object_def(lua, "header_remove", hclua::function2(Self::header_remove));
-        LuaObject::<Object>::object_def(lua, "header_clear", hclua::function1(Self::header_clear));
-        LuaObject::<Object>::object_def(lua, "header_all", hclua::function1(Self::header_all));
+        Object::object_static_def(lua, "version", hclua::function1(Self::version));
+        Object::object_static_def(lua, "set_text", hclua::function2(Self::set_text));
+        Object::object_static_def(lua, "header_get", hclua::function2(Self::header_get));
+        Object::object_static_def(lua, "header_set", hclua::function3(Self::header_set));
+        Object::object_static_def(lua, "header_remove", hclua::function2(Self::header_remove));
+        Object::object_static_def(lua, "header_clear", hclua::function1(Self::header_clear));
+        Object::object_static_def(lua, "header_all", hclua::function1(Self::header_all));
     }
 
 

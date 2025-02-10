@@ -261,7 +261,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
 
         table.set(
             "bind_http",
-            hclua::function2(move |id: i64, addr: String| -> i64 {
+            hclua::function1(move |addr: String| -> i64 {
                 let session = (*service).node.next_seq() as i64;
                 let id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();

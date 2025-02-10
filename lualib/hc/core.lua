@@ -353,7 +353,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_i64(), msg:get_err()
+        return LuaMsg.read_i64(msg), LuaMsg.get_err(msg)
     end,
     dispatch = function() end,
 })
@@ -369,7 +369,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_f64(), msg:get_err()
+        return LuaMsg.read_f64(msg), LuaMsg.get_err(msg)
     end,
     dispatch = function() end,
 })
@@ -385,7 +385,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_str(), msg:get_err()
+        return LuaMsg.read_str(msg), LuaMsg.get_err(msg)
     end,
     dispatch = function() end,
 })

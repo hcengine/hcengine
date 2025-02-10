@@ -28,34 +28,34 @@ impl WrapperRequest {
         
         type Object = WrapperRequest;
         impl_obj_fn!(Object, lua, r, is_http2);
-        LuaObject::<Object>::object_def(lua, "method", hclua::function1(Self::method));
-        LuaObject::<Object>::object_def(lua, "set_url", hclua::function2(Self::set_url));
-        LuaObject::<Object>::object_def(lua, "url", hclua::function1(Self::url));
+        Object::object_static_def(lua, "method", hclua::function1(Self::method));
+        Object::object_static_def(lua, "set_url", hclua::function2(Self::set_url));
+        Object::object_static_def(lua, "url", hclua::function1(Self::url));
         
-        LuaObject::<Object>::object_def(lua, "set_username", hclua::function2(Self::set_username));
-        LuaObject::<Object>::object_def(lua, "username", hclua::function1(Self::username));
+        Object::object_static_def(lua, "set_username", hclua::function2(Self::set_username));
+        Object::object_static_def(lua, "username", hclua::function1(Self::username));
 
-        LuaObject::<Object>::object_def(lua, "set_password", hclua::function2(Self::set_password));
-        LuaObject::<Object>::object_def(lua, "password", hclua::function1(Self::password));
+        Object::object_static_def(lua, "set_password", hclua::function2(Self::set_password));
+        Object::object_static_def(lua, "password", hclua::function1(Self::password));
         
-        LuaObject::<Object>::object_def(lua, "set_domain", hclua::function2(Self::set_domain));
-        LuaObject::<Object>::object_def(lua, "domain", hclua::function1(Self::domain));
+        Object::object_static_def(lua, "set_domain", hclua::function2(Self::set_domain));
+        Object::object_static_def(lua, "domain", hclua::function1(Self::domain));
         
-        LuaObject::<Object>::object_def(lua, "set_query", hclua::function2(Self::set_query));
-        LuaObject::<Object>::object_def(lua, "query", hclua::function1(Self::query));
+        Object::object_static_def(lua, "set_query", hclua::function2(Self::set_query));
+        Object::object_static_def(lua, "query", hclua::function1(Self::query));
         
-        LuaObject::<Object>::object_def(lua, "set_port", hclua::function2(Self::set_port));
-        LuaObject::<Object>::object_def(lua, "port", hclua::function1(Self::port));
+        Object::object_static_def(lua, "set_port", hclua::function2(Self::set_port));
+        Object::object_static_def(lua, "port", hclua::function1(Self::port));
 
-        LuaObject::<Object>::object_def(lua, "set_version", hclua::function2(Self::set_version));
+        Object::object_static_def(lua, "set_version", hclua::function2(Self::set_version));
         
-        LuaObject::<Object>::object_def(lua, "version", hclua::function1(Self::version));
-        LuaObject::<Object>::object_def(lua, "set_text", hclua::function2(Self::set_text));
-        LuaObject::<Object>::object_def(lua, "header_get", hclua::function2(Self::header_get));
-        LuaObject::<Object>::object_def(lua, "header_set", hclua::function3(Self::header_set));
-        LuaObject::<Object>::object_def(lua, "header_remove", hclua::function2(Self::header_remove));
-        LuaObject::<Object>::object_def(lua, "header_clear", hclua::function1(Self::header_clear));
-        LuaObject::<Object>::object_def(lua, "header_all", hclua::function1(Self::header_all));
+        Object::object_static_def(lua, "version", hclua::function1(Self::version));
+        Object::object_static_def(lua, "set_text", hclua::function2(Self::set_text));
+        Object::object_static_def(lua, "header_get", hclua::function2(Self::header_get));
+        Object::object_static_def(lua, "header_set", hclua::function3(Self::header_set));
+        Object::object_static_def(lua, "header_remove", hclua::function2(Self::header_remove));
+        Object::object_static_def(lua, "header_clear", hclua::function1(Self::header_clear));
+        Object::object_static_def(lua, "header_all", hclua::function1(Self::header_all));
     }
 
     pub fn method(&self) -> String {
