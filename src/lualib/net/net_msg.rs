@@ -83,11 +83,11 @@ impl WrapMessage {
 
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
-        WrapMessage::object_static_def(lua, "get_type", hclua::function1(Self::get_type));
-        WrapMessage::object_static_def(lua, "get_string", hclua::function1(Self::get_string));
-        WrapMessage::object_static_def(lua, "get_lstring", hclua::function1(Self::get_lstring));
-        WrapMessage::object_static_def(lua, "take_data", hclua::function1(Self::take_data));
-        WrapMessage::object_static_def(lua, "clone_msg", hclua::function1(Self::clone_msg));
+        WrapMessage::object_def(lua, "get_type", hclua::function1(Self::get_type));
+        WrapMessage::object_def(lua, "get_string", hclua::function1(Self::get_string));
+        WrapMessage::object_def(lua, "get_lstring", hclua::function1(Self::get_lstring));
+        WrapMessage::object_def(lua, "take_data", hclua::function1(Self::take_data));
+        WrapMessage::object_def(lua, "clone_msg", hclua::function1(Self::clone_msg));
         WrapMessage::object_static_def(lua, "pack_text", hclua::function1(Self::pack_text));
         WrapMessage::object_static_def(lua, "pack_binary", hclua::function1(Self::pack_binary));
         WrapMessage::object_static_def(lua, "pack_ping", hclua::function1(Self::pack_ping));

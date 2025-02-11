@@ -21,8 +21,8 @@ hc.register_protocol({
     ---@param msg LuaMsg
     dispatch = function(msg)
         print("timer dissssssssssssssssssss", msg)
-        local timerid = LuaMsg.read_i64(msg)
-        local is_repeat = LuaMsg.read_bool(msg)
+        local timerid = msg:read_i64()
+        local is_repeat = msg:read_bool()
         local v = timer_cache[timerid]
         print("id = ", timerid, " ispreat = ", is_repeat, " call back = ", v)
         if not is_repeat then
@@ -32,7 +32,7 @@ hc.register_protocol({
             return
         end
         if type(v) == "thread" then
-            hc.co_resume(v, timerid, LuaMsg.get_err(msg))
+            hc.co_resume(v, timerid, msg:get_err())
         else
             v()
         end

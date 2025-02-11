@@ -123,7 +123,7 @@ local function _wrap_net_on_msg(id, msg)
         return
     end
 
-    local t = LuaMsg.get_type(msg)
+    local t = msg:get_type()
     if t == hc.NET_PING then
         hc.print("ping!!!!!!!!!!!!!!!!! %o %o", msg, msg:get_lstring())
         local ping_cb = callback["on_ping"]

@@ -1,9 +1,17 @@
-use std::time::Duration;
+use std::{mem::size_of, time::Duration};
 
 use hcengine::{parse_env, CoreUtils, HcNode, ServiceConf};
 
 #[tokio::main]
 async fn main() {
+    
+    // pub struct LightObject {
+    //     ptr: *mut u8,
+    //     name: &'static str,
+    // }
+
+    // println!("size of {}", size_of::<LightObject>());
+
     let config = match parse_env().await {
         Ok(config) => config,
         Err(e) => {

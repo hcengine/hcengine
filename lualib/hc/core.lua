@@ -194,7 +194,9 @@ end
 
 ---@param msg LuaMsg
 local function _wrap_response(msg)
+    hc.print("msg = %o", getmetatable(msg))
     local p = protocol[msg.ty]
+    hc.print("msg.ty = %o", msg.ty)
     if not p then
         error(string.format("handle unknown ty: %s. sender %u", msg.ty, msg.sender))
     end
@@ -353,7 +355,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return LuaMsg.read_i64(msg), LuaMsg.get_err(msg)
+        return msg:read_i64(), msg:get_err()
     end,
     dispatch = function() end,
 })
@@ -369,7 +371,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return LuaMsg.read_f64(msg), LuaMsg.get_err(msg)
+        return msg:read_f64(), msg:get_err()
     end,
     dispatch = function() end,
 })
@@ -385,7 +387,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return LuaMsg.read_str(msg), LuaMsg.get_err(msg)
+        return msg:read_str(), msg:get_err()
     end,
     dispatch = function() end,
 })
