@@ -9,7 +9,7 @@ use wmhttp::{ClientOption, ProtError, ProxyScheme, TimeoutLayer};
 #[hclua_cfg(light)]
 pub struct WrapperClientOption {
     #[hclua_skip]
-    client: ClientOption,
+    pub client: ClientOption,
 }
 
 impl WrapperClientOption {
@@ -19,7 +19,25 @@ impl WrapperClientOption {
     }
 
     pub fn register_all(lua: &mut Lua) {
+        Self::register_field(lua);
 
+        type Object = WrapperClientOption;
+        Object::object_def(lua, "http2", hclua::function1(Self::http2));
+        Object::object_def(lua, "set_http2", hclua::function2(Self::set_http2));
+        Object::object_def(lua, "http2_only", hclua::function1(Self::http2_only));
+        Object::object_def(lua, "set_http2_only", hclua::function2(Self::set_http2_only));
+        Object::object_def(lua, "timeout", hclua::function1(Self::timeout));
+        Object::object_def(lua, "set_timeout", hclua::function2(Self::set_timeout));
+        Object::object_def(lua, "connect_timeout", hclua::function1(Self::connect_timeout));
+        Object::object_def(lua, "set_connect_timeout", hclua::function2(Self::set_connect_timeout));
+        Object::object_def(lua, "ka_timeout", hclua::function1(Self::ka_timeout));
+        Object::object_def(lua, "set_ka_timeout", hclua::function2(Self::set_ka_timeout));
+        Object::object_def(lua, "read_timeout", hclua::function1(Self::read_timeout));
+        Object::object_def(lua, "set_read_timeout", hclua::function2(Self::set_read_timeout));
+        Object::object_def(lua, "write_timeout", hclua::function1(Self::write_timeout));
+        Object::object_def(lua, "set_write_timeout", hclua::function2(Self::set_write_timeout));
+        Object::object_def(lua, "add_proxy", hclua::function2(Self::add_proxy));
+        Object::object_def(lua, "set_url", hclua::function2(Self::set_url));
     }
 
     pub fn http2(&mut self) -> bool {

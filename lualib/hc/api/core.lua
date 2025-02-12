@@ -86,6 +86,10 @@ function core.send_msg(id, msg) end
 ---@param addr string
 function core.bind_http(addr) end
 
+--- 发起http请求
+---@param req Request
+function core.http_request(req, option) end
+
 --- 返回http结果
 ---@param id integer
 ---@param res Response

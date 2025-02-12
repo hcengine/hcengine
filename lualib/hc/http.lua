@@ -1,16 +1,19 @@
 ---@type core
 local core = require("engine.core")
 local _bind_http = core.bind_http
+local _http_request = core.http_request
 
 ---@class hc : core
 local hc = require("hc.core")
 
 local callback_table = {}
+local callback_request = {}
 
 local function calc_http_id(id)
     local high = id >> 32;
     return high & 0xFF
 end
+
 --- 绑定HTTP服务器
 ---@param addr string
 hc.bind_http = function(addr, callback)
@@ -41,4 +44,28 @@ local function _hc_http_incoming(id, req)
     hc.send_response(id, response)
 end 
 
+
+---@param id integer
+---@param res Response | nil
+---@param err string | nil
+local function _hc_http_return(id, res, err)
+    if callback_request[id] then
+        callback_request[id](res, err)
+        callback_request[id] = nil
+    end
+end
+
+--@param req Request
+--@param option ClientOption
+hc.http_request = function(req, option, callback)
+    local session = _http_request(req, option)
+    if session ~= 0 then
+        callback_request[session] = callback
+    end
+end
+
+
 _G["hc_http_incoming"] = _hc_http_incoming
+_G["hc_http_return"] = _hc_http_return
+
+

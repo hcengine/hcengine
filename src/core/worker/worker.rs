@@ -87,6 +87,10 @@ impl HcWorker {
                     // self.listen_http(listen).await;
                     self.http_outcoming(id, res).await;
                 }
+                HcHttp::HttpReturn(service_id, id, res, err) => {
+                    // self.listen_http(listen).await;
+                    self.http_return(service_id, id, res, err).await;
+                }
                 _ => {
                     todo!()
                 }
@@ -344,7 +348,25 @@ impl HcWorker {
         // let _ = self.state.sender.send(msg).await;
     }
     
-
+    pub async fn http_return(&mut self, service_id: u32, id: i64, res: Option<RecvResponse>, err: Option<String>) {
+        println!("http_return ==== {:?} ", id);
+        if let Some(service) = self.services.get_mut(&service_id) {
+            unsafe {
+                if (*service.0).is_ok() {
+                    (*service.0).http_return(id, res, err);
+                }
+            }
+        }
+        // let mut builder = Response::builder().version(webparse::Version::Http11);
+        // builder = builder.header("content-type", "text/plain; charset=utf-8");
+        // let res = builder
+        //     .body(Body::new_text("Hello, World! from response".to_string()))
+        //     .unwrap();
+        // let msg = HcMsg::http_outcoming(id, res);
+        // let _ = self.state.sender.send(msg).await;
+    }
+    
+    
     pub async fn send_msg(&mut self, id: u64, _service_id: u32, msg: WrapMessage) {
         if let Some(info) = self.net_clients.get_mut(&id) {
             let _ = info.sender.send_message(msg.msg);

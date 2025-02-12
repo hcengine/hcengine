@@ -9,6 +9,7 @@ mod client;
 mod server;
 
 pub use server::HttpServer;
+pub use client::HttpClient;
 
 use super::msg::HcHttp;
 

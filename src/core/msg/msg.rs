@@ -53,6 +53,8 @@ pub enum HcHttp {
     HttpIncoming(u32, u64, RecvRequest),
     HttpOutcoming(u64, RecvResponse),
     HttpClose(u32),
+    HttpReturn(u32, i64, Option<RecvResponse>, Option<String>),
+    // HttpReturn(u64, RecvResponse),
 }
 
 pub enum HcMsg {
@@ -167,4 +169,9 @@ impl HcMsg {
     pub fn http_outcoming(http_id: u64, res: RecvResponse) -> Self {
         HcMsg::Http(HcHttp::HttpOutcoming(http_id, res))
     }
+    
+    pub fn http_return(service_id: u32, session: i64, res: Option<RecvResponse>, err: Option<String>) -> Self {
+        HcMsg::Http(HcHttp::HttpReturn(service_id, session, res, err))
+    }
+    
 }

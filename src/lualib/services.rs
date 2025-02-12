@@ -5,7 +5,7 @@ use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    http::HttpServer, msg::WrapperResponse, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf
+    http::{HttpClient, HttpServer}, msg::{WrapperClientOption, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf
 };
 
 use super::WrapMessage;
@@ -285,6 +285,24 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
                     let _ = sender.send(HcMsg::http_outcoming(id, res.0.r)).await;
+                });
+                session
+
+                // tokio::spawn(async move {
+                //     let _ = HttpServer::start_http(addr).await;
+                // });
+                // id
+            }),
+        );
+        
+        table.set(
+            "http_request",
+            hclua::function2(move |req: WrapperObject<WrapperRequest>, option: Option<WrapperObject<WrapperClientOption>>| -> i64 {
+                let session = (*service).node.next_seq() as i64;
+                let service_id = (*service).get_id();
+                let sender = (*service).worker.sender.clone();
+                tokio::spawn(async move {
+                    let _ = HttpClient::do_request(sender, service_id, session, req.0.r, option.map(|v| v.0.client)).await;
                 });
                 session
 

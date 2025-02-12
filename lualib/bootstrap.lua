@@ -177,6 +177,16 @@ hc.async(function()
         response:header_set("ok", "val")
         return response
     end)
+    --@type Request
+    hc.timeout(1000, false, function()
+        local req = Request.new()
+        req:set_url("http://127.0.0.1:8082/startfromlua");
+
+        hc.http_request(req, nil, function(res, err)
+            hc.print("receiver http msg")
+            hc.print("res = %o, err = %o text = %o", res, err, res:get_text())
+        end)
+    end)
 end)
 
 

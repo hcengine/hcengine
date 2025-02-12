@@ -4,4 +4,4 @@ mod wrapper;
 
 pub use msg::{HcMsg, HcOper, HcNet, HcHttp, ListenHttpServer, ListenServer, ConnectServer};
 pub use lua_msg::LuaMsg;
-pub use wrapper::{WrapperLuaMsg, WrapperRequest, WrapperResponse};
+pub use wrapper::{WrapperLuaMsg, WrapperRequest, WrapperResponse, WrapperClientOption};

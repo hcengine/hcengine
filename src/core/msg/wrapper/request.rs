@@ -9,7 +9,7 @@ use wmhttp::{Body, RecvRequest};
 #[hclua_cfg(light)]
 pub struct WrapperRequest {
     #[hclua_skip]
-    r: RecvRequest,
+    pub r: RecvRequest,
 }
 
 impl Default for WrapperRequest {

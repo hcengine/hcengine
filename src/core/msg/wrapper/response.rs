@@ -9,18 +9,20 @@ use wmhttp::{Body, RecvResponse};
 pub struct WrapperResponse {
     #[hclua_skip]
     pub r: RecvResponse,
+    #[hclua_skip]
+    pub body: Option<String>,
 }
 
 impl Default for WrapperResponse {
     fn default() -> Self {
         let r = Response::builder().body(Body::empty()).unwrap();
-        Self { r }
+        Self { r, body: None }
     }
 }
 
 impl WrapperResponse {
     pub fn new(r: RecvResponse) -> Self {
-        Self { r }
+        Self { r, body: None }
     }
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
@@ -32,6 +34,7 @@ impl WrapperResponse {
         
         Object::object_def(lua, "version", hclua::function1(Self::version));
         Object::object_def(lua, "set_text", hclua::function2(Self::set_text));
+        Object::object_def(lua, "get_text", hclua::function1(Self::get_text));
         Object::object_def(lua, "header_get", hclua::function2(Self::header_get));
         Object::object_def(lua, "header_set", hclua::function3(Self::header_set));
         Object::object_def(lua, "header_remove", hclua::function2(Self::header_remove));
@@ -61,6 +64,15 @@ impl WrapperResponse {
         self.r.body_mut().set_text(text);
     }
 
+    pub fn get_text(&mut self) -> Option<String> {
+        if self.body.is_none() {
+            let bin = self.r.body_mut().read_now();
+            let v = bin.into_slice_all();
+            self.body = Some(String::from_utf8_lossy(&v).to_string());
+        }
+        return self.body.clone()
+    }
+
     pub fn get_host(&self) -> Option<String> {
         self.r.headers().get_host()
     }
@@ -84,6 +96,7 @@ impl WrapperResponse {
         }
         ret
     }
+
 
     pub fn header_clear(&mut self) {
         self.r.headers_mut().clear();

@@ -44,7 +44,7 @@ impl Operate {
 impl HttpTrait for Operate {
     async fn operate(&mut self, req: RecvRequest) -> ProtResult<RecvResponse> {
         let mut builder = Response::builder().version(req.version().clone());
-        println!("id === {:?}", self.get_http_id());
+        println!("id === {:?} req = {}", self.get_http_id(), req.url());
         let _ = self
             .worker
             .sender
