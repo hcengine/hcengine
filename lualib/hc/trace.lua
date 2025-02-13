@@ -65,9 +65,9 @@ local function watch(value, prefix, stack)
             table.insert(str_list, string.format("%s} size: %d", prefix, size))
             result = table.concat(str_list, "")
         end
-        return result
+        return "\"" .. result .. "\""
     elseif type(value) == "string" then
-        return value
+        return "\"" .. value .. "\""
     end
     return "unknow"
 end

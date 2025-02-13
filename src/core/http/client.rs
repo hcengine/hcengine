@@ -1,10 +1,12 @@
-use bpaf::OptionParser;
 use tokio::sync::mpsc::Sender;
 use wmhttp::{Client, ClientOption, ProtError, ProtResult, RecvRequest, RecvResponse};
 
 use crate::{HcMsg, HcWorkerState};
 
-pub struct HttpClient {}
+// TODO 缓存请求, 复用链接
+pub struct HttpClient {
+
+}
 
 impl HttpClient {
     pub async fn do_request(
