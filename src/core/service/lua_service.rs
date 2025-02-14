@@ -4,7 +4,10 @@ use hclua::{luaL_loadfile, luaL_openlibs, lua_State, lua_gc, lua_getgs, lua_newt
 use hcnet::NetConn;
 use wmhttp::{RecvRequest, RecvResponse};
 
-use crate::{core::msg::HcOper, luareg_engine_core, msg::{WrapperRequest, WrapperResponse}, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage};
+use crate::{
+    core::msg::HcOper, luareg_engine_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject,
+    WrapMessage, wrapper::{WrapperRequest, WrapperResponse},
+};
 
 use super::ServiceConf;
 
@@ -45,7 +48,6 @@ impl LuaService {
         }
     }
 
-    
     pub unsafe fn get(lua: *mut lua_State) -> *mut LuaService {
         Lua::read_from_extraspace::<LuaService>(lua)
     }
@@ -110,24 +112,30 @@ impl LuaService {
     pub fn exit(&mut self, exitcode: i32) {
         let sender = self.node.sender.clone();
         tokio::spawn(async move {
-            let _ = sender.send(crate::HcMsg::oper(HcOper::Stop(exitcode))).await;
+            let _ = sender
+                .send(crate::HcMsg::oper(HcOper::Stop(exitcode)))
+                .await;
         });
     }
-    
+
     pub fn close(&mut self, service_id: u32) {
         let sender = self.node.sender.clone();
         tokio::spawn(async move {
-            let _ = sender.send(crate::HcMsg::oper(HcOper::CloseService(service_id))).await;
+            let _ = sender
+                .send(crate::HcMsg::oper(HcOper::CloseService(service_id)))
+                .await;
         });
     }
 
     pub fn new_service(&mut self, conf: ServiceConf) {
         let sender = self.node.sender.clone();
         tokio::spawn(async move {
-            let _ = sender.send(crate::HcMsg::oper(HcOper::NewService(conf))).await;
+            let _ = sender
+                .send(crate::HcMsg::oper(HcOper::NewService(conf)))
+                .await;
         });
     }
-    
+
     pub fn query_service(&mut self, name: &String) -> Option<u32> {
         self.node.query_service(&name)
     }
@@ -141,13 +149,20 @@ impl LuaService {
     }
 
     pub fn net_accept_conn(&mut self, connect_id: u64, id: u64, socket_addr: Option<SocketAddr>) {
-        println!("lua service call_msg ================ {:?} {:?}", connect_id, id);
-        let _: Option<()> = self.lua.read_func3("hc_net_accept_conn", connect_id, id, socket_addr);
+        println!(
+            "lua service call_msg ================ {:?} {:?}",
+            connect_id, id
+        );
+        let _: Option<()> = self
+            .lua
+            .read_func3("hc_net_accept_conn", connect_id, id, socket_addr);
     }
 
     pub fn net_close_conn(&mut self, connect_id: u64, id: u64, reason: &str) {
         println!("lua service close_conn ================ {:?}", id);
-        let _: Option<()> = self.lua.read_func3("hc_net_close_conn", connect_id, id, reason);
+        let _: Option<()> = self
+            .lua
+            .read_func3("hc_net_close_conn", connect_id, id, reason);
     }
 
     pub fn net_open_conn(&mut self, id: u64) {
@@ -160,7 +175,7 @@ impl LuaService {
         let r = WrapperRequest::new(req);
         let _: Option<()> = self.lua.read_func2("hc_http_incoming", id, r);
     }
-    
+
     pub fn http_return(&mut self, id: i64, res: Option<RecvResponse>, err: Option<String>) {
         println!("lua service open_conn ================ {:?}", id);
         let res = res.map(|r: webparse::Response<wmhttp::Body>| WrapperResponse::new(r));
@@ -181,7 +196,7 @@ impl LuaService {
         println!("lua service resp_msg ================");
         let _: Option<()> = self.lua.read_func1("hc_msg_resp", msg);
     }
-    
+
     pub fn tick_timer(&mut self, timer_id: u64) {
         println!("lua service resp_msg ================");
         let _: Option<()> = self.lua.read_func1("hc_msg_resp", timer_id);

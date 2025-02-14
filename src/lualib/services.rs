@@ -5,7 +5,7 @@ use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    http::{HttpClient, HttpServer}, msg::{WrapperClientOption, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf
+    http::{HttpClient, HttpServer}, wrapper::{WrapperClientOption, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf
 };
 
 use super::WrapMessage;

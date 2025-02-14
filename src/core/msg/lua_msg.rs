@@ -1,7 +1,7 @@
 use algorithm::buf::{BinaryMut, Bt, BtMut};
 use hclua::{lua_State, Lua, LuaObject, LuaPush, ObjectMacro};
 
-use super::WrapperLuaMsg;
+use crate::core::wrapper::WrapperLuaMsg;
 
 #[derive(Default, ObjectMacro)]
 #[hclua_cfg(name = LuaMsg)]

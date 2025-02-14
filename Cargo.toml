@@ -25,6 +25,8 @@ algorithm = {version = "0.1.17", features = ["ttl"]}
 wmhttp = { path = "../wmhttp" }
 webparse = { path = "../webparse" }
 
+redis = "0.28.2"
+
 hcnet = { path = "../hcnet" }
 hclua = { path = "../hclua", features = ["lua53"] }
 hclua-cjson = { features = ["lua53"], path = "./luac/hclua-cjson" }
