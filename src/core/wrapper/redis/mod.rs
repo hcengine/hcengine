@@ -1,10 +1,14 @@
 use hclua::{self, lua_State, LuaPush, LuaRead, LuaTable};
 use redis::{Cmd, Msg, RedisError, RedisResult, Value};
 
+use crate::LuaUtils;
+
 static STATUS_SUFFIX: &'static str = "::STATUS";
 static ERROR_SUFFIX: &'static str = "::ERROR";
+static STATUS_TYPE: u32 = 1;
+static ERROR_TYPE: u32 = 2;
 /// the wrapper for push to lua
-pub struct RedisWrapperValue(pub Value);
+pub struct WrapperRedisValue(pub Value);
 pub struct RedisWrapperError(pub RedisError);
 pub struct RedisWrapperResult(pub RedisResult<Value>);
 pub struct RedisWrapperMsg(pub Msg);
@@ -14,7 +18,23 @@ pub struct RedisWrapperCmd(pub Cmd);
 pub struct RedisWrapperBatchVecVec(pub Vec<Vec<Vec<u8>>>);
 pub struct RedisWrapperBatchCmd(pub Vec<Cmd>);
 
-impl LuaPush for RedisWrapperValue {
+fn push_vec_value(lua: *mut lua_State, value: Vec<Value>) -> i32 {
+    unsafe {
+        hclua::lua_newtable(lua);
+
+        for (i, v) in value.into_iter().enumerate() {
+            i.push_to_lua(lua);
+            let len = WrapperRedisValue(v).push_to_lua(lua);
+            if len > 1 {
+                hclua::lua_pop(lua, len - 1);
+            }
+            hclua::lua_settable(lua, -3);
+        }
+        1
+    }
+}
+
+impl LuaPush for WrapperRedisValue {
     fn push_to_lua(self, lua: *mut lua_State) -> i32 {
         match self.0 {
             Value::Nil => ().push_to_lua(lua),
@@ -25,16 +45,55 @@ impl LuaPush for RedisWrapperValue {
                 };
                 1
             }
-            Value::Array(mut val) => {
-                let mut wrapper_val: Vec<RedisWrapperValue> = vec![];
-                for v in val.drain(..) {
-                    wrapper_val.push(RedisWrapperValue(v));
-                }
-                wrapper_val.push_to_lua(lua)
-            }
+            Value::Array(val) => push_vec_value(lua, val),
+            Value::SimpleString(val) => val.push_to_lua(lua),
             Value::Okay => {
-                let val = "OK".to_string() + STATUS_SUFFIX;
-                val.push_to_lua(lua)
+                "OK".push_to_lua(lua);
+                STATUS_TYPE.push_to_lua(lua);
+                2
+            }
+            Value::Map(val) => unsafe {
+                hclua::lua_newtable(lua);
+
+                for (k, v) in val {
+                    let len = WrapperRedisValue(k).push_to_lua(lua);
+                    if len > 1 {
+                        hclua::lua_pop(lua, len - 1);
+                    }
+                    let len = WrapperRedisValue(v).push_to_lua(lua);
+                    if len > 1 {
+                        hclua::lua_pop(lua, len - 1);
+                    }
+                    hclua::lua_settable(lua, -3);
+                }
+                1
+            },
+            Value::Attribute { data, attributes } => {
+                todo!()
+            }
+            Value::Set(val) => push_vec_value(lua, val),
+            Value::Double(val) => val.push_to_lua(lua),
+            Value::Boolean(val) => val.push_to_lua(lua),
+            Value::VerbatimString { format, text } => {
+                todo!()
+            }
+            Value::BigNumber(val) => {
+                // val.push_to_lua(lua)
+                todo!()
+            }
+            Value::Push { kind, data } => unsafe {
+                hclua::lua_newtable(lua);
+                "kind".push_to_lua(lua);
+                format!("{}", kind).push_to_lua(lua);
+                hclua::lua_settable(lua, -3);
+                "data".push_to_lua(lua);
+                push_vec_value(lua, data);
+                1
+            },
+            Value::ServerError(e) => {
+                format!("{}", e.details().unwrap_or("error")).push_to_lua(lua);
+                ERROR_TYPE.push_to_lua(lua);
+                2
             }
             // TODO!
             _ => {
@@ -55,106 +114,46 @@ impl LuaPush for RedisWrapperError {
 impl LuaPush for RedisWrapperResult {
     fn push_to_lua(self, lua: *mut lua_State) -> i32 {
         match self.0 {
-            Ok(val) => RedisWrapperValue(val).push_to_lua(lua),
+            Ok(val) => WrapperRedisValue(val).push_to_lua(lua),
             Err(err) => RedisWrapperError(err).push_to_lua(lua),
         }
     }
 }
-
-impl LuaPush for RedisWrapperMsg {
-    fn push_to_lua(self, lua: *mut lua_State) -> i32 {
-        unsafe {
-            hclua::lua_newtable(lua);
-
-            let payload: RedisResult<Value> = self.0.get_payload();
-            if payload.is_ok() {
-                "payload".push_to_lua(lua);
-                RedisWrapperValue(payload.ok().unwrap()).push_to_lua(lua);
-                hclua::lua_settable(lua, -3);
-            }
-
-            "channel".push_to_lua(lua);
-            self.0.get_channel_name().push_to_lua(lua);
-            hclua::lua_settable(lua, -3);
-
-            let pattern: RedisResult<String> = self.0.get_pattern();
-            if pattern.is_ok() {
-                "pattern".push_to_lua(lua);
-                pattern.ok().unwrap().push_to_lua(lua);
-                hclua::lua_settable(lua, -3);
-            }
-            1
-        }
-    }
-}
-
-impl LuaRead for RedisWrapperVecVec {
-    fn lua_read_with_pop_impl(
-        lua: *mut lua_State,
-        index: i32,
-        _pop: i32,
-    ) -> Option<RedisWrapperVecVec> {
-        let args = unsafe { hclua::lua_gettop(lua) - index.abs() + 1 };
-        let mut vecs = vec![];
-        if args < 0 {
-            return None;
-        }
-        for i in 0..args {
-            let mut val: Option<Vec<u8>> = None;
-            let bval: Option<bool> = LuaRead::lua_read_at_position(lua, i + index);
-            if let Some(b) = bval {
-                if b {
-                    val = Some("1".to_string().into_bytes());
-                } else {
-                    val = Some("0".to_string().into_bytes());
-                }
-            }
-            // if val.is_none() {
-            //     let dst = unwrap_or!(LuaUtils::read_str_to_vec(lua, i + index), return None);
-            //     val = Some(dst);
-            // }
-            if val.is_none() {
-                return None;
-            }
-            vecs.push(val.unwrap());
-        }
-        Some(RedisWrapperVecVec(vecs))
-    }
-}
-
-impl LuaRead for RedisWrapperBatchVecVec {
-    fn lua_read_with_pop_impl(
-        lua: *mut lua_State,
-        index: i32,
-        _pop: i32,
-    ) -> Option<RedisWrapperBatchVecVec> {
-        let args = unsafe { hclua::lua_gettop(lua) - index.abs() + 1 };
-        let mut vecs = vec![];
-        if args < 0 {
-            return None;
-        }
-        for i in 0..args {
-            let mut table: LuaTable =
-                unwrap_or!(LuaRead::lua_read_at_position(lua, i + index), return None);
-            let mut sub_vec = vec![];
-            for j in 1..table.table_len() + 1 {
-                let val: Option<String> = table.query(j);
-                if val.is_some() {
-                    sub_vec.push(val.unwrap().into_bytes());
-                    continue;
-                }
-                let val: Option<f32> = table.query(j);
-                if val.is_some() {
-                    sub_vec.push(format!("{}", val.unwrap()).into_bytes());
-                    continue;
+fn read_at_index(cmd: &mut Cmd, lua: *mut lua_State, index: i32) -> Option<()> {
+    unsafe {
+        let t = hclua::lua_type(lua, index);
+        match t {
+            hclua::LUA_TBOOLEAN => {
+                if let Some(v) = <bool as LuaRead>::lua_read_at_position(lua, index) {
+                    if v {
+                        cmd.arg("1");
+                    } else {
+                        cmd.arg("0");
+                    }
                 } else {
                     return None;
                 }
             }
-            vecs.push(sub_vec);
+            hclua::LUA_TNUMBER => {
+                if let Some(v) = <f64 as LuaRead>::lua_read_at_position(lua, index) {
+                    cmd.arg(v);
+                } else {
+                    return None;
+                }
+            }
+            hclua::LUA_TSTRING => {
+                if let Some(v) = LuaUtils::read_str_to_vec(lua, index) {
+                    cmd.arg(v);
+                } else {
+                    return None;
+                }
+            }
+            _ => {
+                return None;
+            }
         }
-        Some(RedisWrapperBatchVecVec(vecs))
     }
+    Some(())
 }
 
 impl LuaRead for RedisWrapperCmd {
@@ -163,14 +162,14 @@ impl LuaRead for RedisWrapperCmd {
         index: i32,
         _pop: i32,
     ) -> Option<RedisWrapperCmd> {
-        let vecs: RedisWrapperVecVec =
-            unwrap_or!(LuaRead::lua_read_at_position(lua, index), return None);
-        let mut cmd = Cmd::new();
-        for vec in vecs.0 {
-            cmd.arg(vec);
+        let args = unsafe { hclua::lua_gettop(lua) - index.abs() + 1 };
+        if args < 0 {
+            return None;
         }
-
-        // ObjectMgr::instance().obj_alloc("RedisWrapperCmd".to_string());
+        let mut cmd = Cmd::new();
+        for i in 0..args {
+            unwrap_or!(read_at_index(&mut cmd, lua, i + index), return None);
+        }
         Some(RedisWrapperCmd(cmd))
     }
 }
@@ -187,14 +186,41 @@ impl LuaRead for RedisWrapperBatchCmd {
         index: i32,
         _pop: i32,
     ) -> Option<RedisWrapperBatchCmd> {
-        let vecs: RedisWrapperBatchVecVec =
-            unwrap_or!(LuaRead::lua_read_at_position(lua, index), return None);
-        let mut cmds = vec![];
-        for vec in vecs.0 {
-            let mut cmd = Cmd::new();
-            cmd.arg(vec);
-            cmds.push(cmd);
+        // let vecs: RedisWrapperBatchVecVec =
+        //     unwrap_or!(LuaRead::lua_read_at_position(lua, index), return None);
+        // let mut cmds = vec![];
+        // for vec in vecs.0 {
+        //     let mut cmd = Cmd::new();
+        //     cmd.arg(vec);
+        //     cmds.push(cmd);
+        // }
+        // Some(RedisWrapperBatchCmd(cmds))
+
+        let args = unsafe { hclua::lua_gettop(lua) - index.abs() + 1 };
+        let mut vecs = vec![];
+        if args < 0 {
+            return None;
         }
-        Some(RedisWrapperBatchCmd(cmds))
+        unsafe {
+            for i in 0..args {
+                let new_idx = i + index;
+                if !hclua::lua_istable(lua, new_idx) {
+                    return None;
+                }
+                let len = hclua::lua_rawlen(lua, new_idx);
+                for j in 1..len + 1 {
+                    j.push_to_lua(lua);
+                    hclua::lua_gettable(lua, new_idx);
+                    let mut cmd = Cmd::new();
+                    unwrap_or!(read_at_index(&mut cmd, lua, -1), {
+                        hclua::lua_pop(lua, 1);
+                        return None;
+                    });
+                    vecs.push(cmd);
+                }
+                hclua::lua_pop(lua, 1);
+            }
+        }
+        Some(RedisWrapperBatchCmd(vecs))
     }
 }
