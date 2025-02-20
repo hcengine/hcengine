@@ -5,7 +5,7 @@ use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    http::{HttpClient, HttpServer}, wrapper::{WrapperClientOption, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, ServiceConf, ServiceWrapper, TimerConf
+    http::{HttpClient, HttpServer}, wrapper::{RedisWrapperBatchCmd, RedisWrapperCmd, WrapperClientOption, WrapperRedisValue, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, RedisCmd, ServiceConf, ServiceWrapper, TimerConf
 };
 
 use super::WrapMessage;
@@ -305,11 +305,41 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                     let _ = HttpClient::do_request(sender, service_id, session, req.0.r, option.map(|v| v.0.client)).await;
                 });
                 session
+            }),
+        );
+        
+        table.set(
+            "set_redis_url",
+            hclua::function1(move |url_list: Vec<String>| -> u32 {
+                (*service).node.set_redis_url(url_list)
+            }),
+        );
 
-                // tokio::spawn(async move {
-                //     let _ = HttpServer::start_http(addr).await;
-                // });
-                // id
+        table.set(
+            "run_redis_command",
+            hclua::function2(move |url_id: u32, cmd: RedisWrapperCmd| -> i64 {
+                let session = (*service).node.next_seq() as i64;
+                let service_id = (*service).get_id();
+                let sender = (*service).worker.sender.clone();
+                let cmd = RedisCmd::One(cmd.0);
+                tokio::spawn(async move {
+                    let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd)).await;
+                });
+                session
+            }),
+        );
+        
+        table.set(
+            "run_redis_batch_command",
+            hclua::function2(move |url_id: u32, cmd: RedisWrapperBatchCmd| -> i64 {
+                let session = (*service).node.next_seq() as i64;
+                let service_id = (*service).get_id();
+                let sender = (*service).worker.sender.clone();
+                let cmd = RedisCmd::Batch(cmd.0);
+                tokio::spawn(async move {
+                    let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd)).await;
+                });
+                session
             }),
         );
         // table.set(

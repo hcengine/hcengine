@@ -9,7 +9,6 @@ async fn main() {
     //     ptr: *mut u8,
     //     name: &'static str,
     // }
-
     // println!("size of {}", size_of::<LightObject>());
 
     let config = match parse_env().await {

@@ -3,12 +3,28 @@ mod http;
 mod redis;
 
 pub use http::*;
+use ::redis::Value;
 pub use redis::*;
+use wmhttp::{RecvRequest, RecvResponse};
 
 pub enum WrapperLuaMsg {
     Request(WrapperRequest),
     Response(WrapperResponse),
     Redis(WrapperRedisValue),
+}
+
+impl WrapperLuaMsg {
+    pub fn request(r: RecvRequest) -> Self {
+        Self::Request(WrapperRequest::new(r))
+    }
+    
+    pub fn response(r: RecvResponse) -> Self {
+        Self::Response(WrapperResponse::new(r))
+    }
+    
+    pub fn redis(r: Value) -> Self {
+        Self::Redis(WrapperRedisValue(r))
+    }
 }
 
 impl LuaPush for WrapperLuaMsg {

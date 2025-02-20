@@ -8,7 +8,7 @@ use hcnet::{NetConn, NetSender, Settings};
 use log::info;
 use tokio::{
     net::TcpListener,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{channel, error::SendError, unbounded_channel, Receiver, Sender},
 };
 use webparse::Response;
 use wmhttp::{Body, RecvRequest, RecvResponse};
@@ -17,11 +17,7 @@ use crate::{
     core::{
         msg::{HcNet, HcOper, ListenServer, LuaMsg},
         HcMsg,
-    },
-    http::{HttpSender, HttpServer},
-    msg::{ConnectServer, HcHttp, ListenHttpServer},
-    CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, ServiceConf,
-    ServiceWrapper, WrapMessage,
+    }, http::{HttpSender, HttpServer}, msg::{ConnectServer, HcHttp, ListenHttpServer}, CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, RedisMsg, RedisSender, ServiceConf, ServiceWrapper, WrapMessage
 };
 
 use super::HcWorkerState;
@@ -36,6 +32,7 @@ pub struct HcWorker {
     pub http_clients: HashMap<u64, HttpSender>,
     pub net_servers: HashMap<u64, NetSender>,
     pub net_clients: HashMap<u64, NetInfo>,
+    pub redis_clients: HashMap<u32, RedisSender>,
 }
 
 impl HcWorker {
@@ -53,6 +50,7 @@ impl HcWorker {
                 net_clients: HashMap::new(),
                 http_servers: HashMap::new(),
                 http_clients: HashMap::new(),
+                redis_clients: HashMap::new(),
             },
             state,
         )
@@ -75,6 +73,9 @@ impl HcWorker {
                     todo!()
                 }
             },
+            HcMsg::Redis(msg) => {
+                self.redis_msg(msg).await;
+            }
             HcMsg::Http(msg) => match msg {
                 HcHttp::ListenHttpServer(listen) => {
                     self.listen_http(listen).await;
@@ -578,6 +579,44 @@ impl HcWorker {
                     (*service.0).resp_msg(msg);
                 }
             }
+        }
+    }
+
+    async fn start_redis_connect(&mut self, msg: RedisMsg) {
+        if let Some(v) = self.node_state.get_redis_url(&msg.url_id) {
+            let (tx, rx) = unbounded_channel();
+            
+        } else {
+            let mut data = BinaryMut::new();
+            data.put_u64(0 as u64);
+            let _ = self
+                .node_state
+                .sender
+                .send(HcMsg::RespMsg(LuaMsg {
+                    ty: Config::TY_INTEGER,
+                    sender: 0,
+                    receiver: msg.service_id,
+                    sessionid: msg.session,
+                    err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
+                    data,
+                    ..Default::default()
+                }))
+                .await;
+        }
+    }
+    
+    pub async fn redis_msg(&mut self, msg: RedisMsg) {
+        if let Some(client) = self.redis_clients.get_mut(&msg.url_id) {
+            match client.sender.send(msg) {
+                Err(e) => {
+                    self.redis_clients.remove(&e.0.url_id);
+                    self.start_redis_connect(e.0).await;
+                },
+                _ => {}
+            }
+        } else {
+            self.start_redis_connect(msg).await;
+            return;
         }
     }
 }

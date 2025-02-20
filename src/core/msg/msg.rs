@@ -2,7 +2,10 @@ use algorithm::{buf::BinaryMut, StampTimer};
 use hcnet::{Message, NetConn, NetSender, Settings};
 use wmhttp::{RecvRequest, RecvResponse};
 
-use crate::{LuaMsg, NetInfo, ServiceConf, TimerNode, WrapMessage};
+use crate::{
+    wrapper::RedisWrapperMsg, LuaMsg, NetInfo, RedisCmd, RedisMsg, ServiceConf, TimerNode,
+    WrapMessage,
+};
 
 pub enum HcOper {
     /// timer_id, TimerNode
@@ -61,6 +64,7 @@ pub enum HcMsg {
     Msg(Message),
     Net(HcNet),
     Http(HcHttp),
+    Redis(RedisMsg),
     // NewService(ServiceConf),
     // Stop(i32),
     // CloseService(u32),
@@ -169,9 +173,22 @@ impl HcMsg {
     pub fn http_outcoming(http_id: u64, res: RecvResponse) -> Self {
         HcMsg::Http(HcHttp::HttpOutcoming(http_id, res))
     }
-    
-    pub fn http_return(service_id: u32, session: i64, res: Option<RecvResponse>, err: Option<String>) -> Self {
+
+    pub fn http_return(
+        service_id: u32,
+        session: i64,
+        res: Option<RecvResponse>,
+        err: Option<String>,
+    ) -> Self {
         HcMsg::Http(HcHttp::HttpReturn(service_id, session, res, err))
     }
-    
+
+    pub fn redis_msg(url_id: u32, service_id: u32, session: i64, cmd: RedisCmd) -> Self {
+        HcMsg::Redis(RedisMsg {
+            url_id,
+            cmd,
+            service_id,
+            session,
+        })
+    }
 }

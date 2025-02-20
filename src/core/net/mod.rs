@@ -1,6 +1,8 @@
 mod client;
 mod common;
 mod server;
+pub mod http;
+mod redis;
 
 use std::net::SocketAddr;
 
@@ -8,6 +10,7 @@ pub use client::NetClient;
 pub use common::CommonHandler;
 use hcnet::NetSender;
 pub use server::NetServer;
+pub use redis::{RedisCmd, RedisSender, RedisMsg};
 
 #[derive(Debug, Clone)]
 pub struct NetInfo {

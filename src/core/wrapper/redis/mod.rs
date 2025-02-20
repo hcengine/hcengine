@@ -38,7 +38,7 @@ impl LuaPush for WrapperRedisValue {
     fn push_to_lua(self, lua: *mut lua_State) -> i32 {
         match self.0 {
             Value::Nil => ().push_to_lua(lua),
-            Value::Int(val) => (val as u32).push_to_lua(lua),
+            Value::Int(val) => val.push_to_lua(lua),
             Value::BulkString(val) => {
                 unsafe {
                     hclua::lua_pushlstring(lua, val.as_ptr() as *const libc::c_char, val.len())
@@ -174,11 +174,6 @@ impl LuaRead for RedisWrapperCmd {
     }
 }
 
-impl Drop for RedisWrapperCmd {
-    fn drop(&mut self) {
-        // ObjectMgr::instance().obj_dealloc("RedisWrapperCmd".to_string());
-    }
-}
 
 impl LuaRead for RedisWrapperBatchCmd {
     fn lua_read_with_pop_impl(
@@ -186,16 +181,6 @@ impl LuaRead for RedisWrapperBatchCmd {
         index: i32,
         _pop: i32,
     ) -> Option<RedisWrapperBatchCmd> {
-        // let vecs: RedisWrapperBatchVecVec =
-        //     unwrap_or!(LuaRead::lua_read_at_position(lua, index), return None);
-        // let mut cmds = vec![];
-        // for vec in vecs.0 {
-        //     let mut cmd = Cmd::new();
-        //     cmd.arg(vec);
-        //     cmds.push(cmd);
-        // }
-        // Some(RedisWrapperBatchCmd(cmds))
-
         let args = unsafe { hclua::lua_gettop(lua) - index.abs() + 1 };
         let mut vecs = vec![];
         if args < 0 {

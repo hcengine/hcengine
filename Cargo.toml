@@ -25,7 +25,7 @@ algorithm = {version = "0.1.17", features = ["ttl"]}
 wmhttp = { path = "../wmhttp" }
 webparse = { path = "../webparse" }
 
-redis = "0.28.2"
+redis = { version = "0.28.2", features = ["tokio-rustls-comp", "cluster", "aio"] }
 
 hcnet = { path = "../hcnet" }
 hclua = { path = "../hclua", features = ["lua53"] }

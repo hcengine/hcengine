@@ -11,7 +11,7 @@ mod server;
 pub use server::HttpServer;
 pub use client::HttpClient;
 
-use super::msg::HcHttp;
+use crate::core::msg::HcHttp;
 
 
 pub type HttpReceiver = tokio::sync::mpsc::Receiver<HcHttp>;
