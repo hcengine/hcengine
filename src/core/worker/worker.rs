@@ -17,7 +17,11 @@ use crate::{
     core::{
         msg::{HcNet, HcOper, ListenServer, LuaMsg},
         HcMsg,
-    }, http::{HttpSender, HttpServer}, msg::{ConnectServer, HcHttp, ListenHttpServer}, CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, RedisMsg, RedisSender, ServiceConf, ServiceWrapper, WrapMessage
+    },
+    http::{HttpSender, HttpServer},
+    msg::{ConnectServer, HcHttp, ListenHttpServer},
+    CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, RedisCtl, RedisMsg,
+    RedisSender, ServiceConf, ServiceWrapper, WrapMessage,
 };
 
 use super::HcWorkerState;
@@ -327,12 +331,14 @@ impl HcWorker {
         let mut builder = Response::builder().version(webparse::Version::Http11);
         builder = builder.header("content-type", "text/plain; charset=utf-8");
         let res = builder
-            .body(Body::new_text(format!("Hello, World! from response {}", (id as u32) & u32::MAX)))
+            .body(Body::new_text(format!(
+                "Hello, World! from response {}",
+                (id as u32) & u32::MAX
+            )))
             .unwrap();
         // let msg = HcMsg::http_outcoming(id, res);
         // let _ = self.state.sender.send(msg).await;
     }
-
 
     pub async fn http_outcoming(&mut self, id: u64, res: RecvResponse) {
         println!("http_outcoming ==== {:?} ", id);
@@ -348,8 +354,14 @@ impl HcWorker {
         // let msg = HcMsg::http_outcoming(id, res);
         // let _ = self.state.sender.send(msg).await;
     }
-    
-    pub async fn http_return(&mut self, service_id: u32, id: i64, res: Option<RecvResponse>, err: Option<String>) {
+
+    pub async fn http_return(
+        &mut self,
+        service_id: u32,
+        id: i64,
+        res: Option<RecvResponse>,
+        err: Option<String>,
+    ) {
         println!("http_return ==== {:?} ", id);
         if let Some(service) = self.services.get_mut(&service_id) {
             unsafe {
@@ -366,8 +378,7 @@ impl HcWorker {
         // let msg = HcMsg::http_outcoming(id, res);
         // let _ = self.state.sender.send(msg).await;
     }
-    
-    
+
     pub async fn send_msg(&mut self, id: u64, _service_id: u32, msg: WrapMessage) {
         if let Some(info) = self.net_clients.get_mut(&id) {
             let _ = info.sender.send_message(msg.msg);
@@ -434,8 +445,13 @@ impl HcWorker {
             return;
         }
         let (sender, receiver) = HttpSender::new(10, 1);
-        let con = HttpServer::new(http_id, server.service_id, self.state.clone(), sender.clone());
-        
+        let con = HttpServer::new(
+            http_id,
+            server.service_id,
+            self.state.clone(),
+            sender.clone(),
+        );
+
         self.http_servers.insert(http_id, sender);
         tokio::spawn(async move {
             let _ = con.run_http(l, receiver).await;
@@ -585,6 +601,16 @@ impl HcWorker {
     async fn start_redis_connect(&mut self, msg: RedisMsg) {
         if let Some(v) = self.node_state.get_redis_url(&msg.url_id) {
             let (tx, rx) = unbounded_channel();
+            let mut ctl = RedisCtl::new(rx, v, self.state.clone(), self.node_state.clone());
+            let sender = RedisSender {
+                sender: tx,
+                id: msg.url_id,
+            };
+            let _ = sender.sender.send(msg);
+            self.redis_clients.insert(sender.id, sender);
+            tokio::spawn(async move {
+                ctl.server().await;
+            });
             
         } else {
             let mut data = BinaryMut::new();
@@ -604,14 +630,14 @@ impl HcWorker {
                 .await;
         }
     }
-    
+
     pub async fn redis_msg(&mut self, msg: RedisMsg) {
         if let Some(client) = self.redis_clients.get_mut(&msg.url_id) {
             match client.sender.send(msg) {
                 Err(e) => {
                     self.redis_clients.remove(&e.0.url_id);
                     self.start_redis_connect(e.0).await;
-                },
+                }
                 _ => {}
             }
         } else {

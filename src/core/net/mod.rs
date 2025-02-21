@@ -10,7 +10,7 @@ pub use client::NetClient;
 pub use common::CommonHandler;
 use hcnet::NetSender;
 pub use server::NetServer;
-pub use redis::{RedisCmd, RedisSender, RedisMsg};
+pub use redis::{RedisCmd, RedisSender, RedisMsg, RedisCtl};
 
 #[derive(Debug, Clone)]
 pub struct NetInfo {
@@ -29,4 +29,5 @@ impl NetInfo {
             socket_addr,
         }
     }
+
 }

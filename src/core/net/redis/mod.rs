@@ -3,6 +3,8 @@ use tokio::sync::mpsc::UnboundedSender;
 
 mod redis_ctl;
 
+pub use redis_ctl::RedisCtl;
+
 pub enum RedisCmd {
     One(Cmd),
     Batch(Vec<Cmd>),
