@@ -611,15 +611,14 @@ impl HcWorker {
             tokio::spawn(async move {
                 ctl.server().await;
             });
-            
+
         } else {
-            let mut data = BinaryMut::new();
-            data.put_u64(0 as u64);
+            let data = BinaryMut::new();
             let _ = self
                 .node_state
                 .sender
                 .send(HcMsg::RespMsg(LuaMsg {
-                    ty: Config::TY_INTEGER,
+                    ty: Config::TY_ERROR,
                     sender: 0,
                     receiver: msg.service_id,
                     sessionid: msg.session,

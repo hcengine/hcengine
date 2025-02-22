@@ -307,6 +307,8 @@ hc.TY_LUA = 4;
 hc.TY_LUA_MSG = 5;
 hc.TY_NET = 6;
 hc.TY_TIMER = 7;
+hc.TY_ERROR = 8;
+hc.TY_REDIS = 9;
 
 hc.register_protocol = function(t)
     local ty = t.ty
@@ -391,6 +393,30 @@ hc.register_protocol({
     end,
     dispatch = function() end,
 })
+
+hc.register_protocol({
+    name = "lua",
+    ty = hc.TY_ERROR,
+    pack = hc.pack,
+    unpack = function(msg)
+        return nil, msg:get_err()
+    end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "lua",
+    ty = hc.TY_REDIS,
+    pack = hc.pack,
+    unpack = function(msg)
+        hc.print("redis msg = %o", msg)
+        return msg:read_obj()
+    end,
+    dispatch = function() end,
+})
+
+
+
 ------protocol message ----------------------
 ---------------------------------------------
 

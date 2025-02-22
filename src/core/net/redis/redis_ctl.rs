@@ -59,7 +59,7 @@ impl RedisCtl {
     async fn send_err_result(worker: &mut HcWorkerState, service_id: u32, session: i64) {
         let data = BinaryMut::new();
         let msg = LuaMsg {
-            ty: Config::TY_REDIS,
+            ty: Config::TY_ERROR,
             sender: 0,
             receiver: service_id,
             sessionid: session,
@@ -67,6 +67,7 @@ impl RedisCtl {
             data,
             ..Default::default()
         };
+        println!("send err result ====== {:?}", 1111111111);
         let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
     }
 
@@ -100,7 +101,9 @@ impl RedisCtl {
                     data,
                     ..Default::default()
                 };
+                println!("is real redis value = {:?}", v);
                 msg.obj = Some(WrapperLuaMsg::redis(v));
+                
                 let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
                 let _ = client_sd.send(Some(client)).await;
             }
@@ -123,7 +126,16 @@ impl RedisCtl {
                 return Ok(self.client_caches.pop_front().unwrap());
             }
             if let Ok(c) = &self.url_result {
-                return c.get_async_connection().await;
+                match c.get_async_connection().await {
+                    Ok(v) => {
+                        self.client_num += 1;
+                        return Ok(v)
+                    }
+                    Err(e) => {
+                        println!("redis error === {:?}", e);
+                        return Err(e);
+                    }
+                }
             }
         }
         return Err(RedisError::from(io::Error::from(io::ErrorKind::BrokenPipe)));
@@ -158,6 +170,8 @@ impl RedisCtl {
                     if self.client_caches.len() == 1 {
                         self.notify.notify_one();
                     }
+                } else {
+                    self.client_num -= 1;
                 }
             }
         }

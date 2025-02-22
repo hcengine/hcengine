@@ -47,6 +47,8 @@ impl LuaMsg {
         LuaObject::<LuaMsg>::object_def(lua, "write_f32", hclua::function2(Self::write_f32));
         LuaObject::<LuaMsg>::object_def(lua, "write_f64", hclua::function2(Self::write_f64));
         LuaObject::<LuaMsg>::object_def(lua, "write_str", hclua::function2(Self::write_str));
+        LuaObject::<LuaMsg>::object_register(lua, "read_obj", Self::read_obj);
+        
     }
 
     pub fn write_bool(&mut self, val: bool) {
@@ -98,9 +100,13 @@ impl LuaMsg {
     }
 
     extern "C" fn read_obj(lua: *mut lua_State) -> libc::c_int {
-        let msg: &mut LuaMsg = unwrap_or!(hclua::read_userdata(lua, 1), return 0);
+        println!("read_obj");
+        let msg: &mut LuaMsg = unwrap_or!(hclua::read_wrapper_light_userdata(lua, 1), return 0);
+        println!("read_obj msg success value = {:?}", msg.obj.is_some());
         let obj = unwrap_or!(msg.obj.take(), return 0);
         obj.push_to_lua(lua);
         0
     }
+
+    
 }

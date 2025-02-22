@@ -171,6 +171,15 @@ hc.async(function()
     end)
 end)
 
+hc.async(function() 
+    local id = hc.set_redis_url({"redis://192.168.17.210:6379"})
+    hc.print("redis id === %o", id)
+    local ret, err = hc.wait(hc.run_redis_command(id, 
+        "get", "xx"
+    ))
+    hc.print("redis ret === %o err = %o", ret, err)
+    -- hc.telnet 192.168.17.210 6379
+end)
 
 -- hc.async(function()
 --     -- hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)

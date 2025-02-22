@@ -43,13 +43,14 @@ impl HcNodeState {
     }
 
     pub fn set_redis_url(&mut self, val: Vec<String>) -> u32 {
-        let map = self.redis_url_map.write().unwrap();
-        let mut index = map.len() as u32 + 1;
+        let mut map = self.redis_url_map.write().unwrap();
+        let index = map.len() as u32 + 1;
         for (k, v) in map.iter() {
             if v == &val {
-                index = *k;
+                return *k;
             }
         }
+        map.insert(index, val);
         index
     }
 
