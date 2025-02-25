@@ -1,7 +1,7 @@
-use std::sync::{
-    atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering},
+use std::{sync::{
+    atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicUsize, Ordering},
     Arc, RwLock,
-};
+}, u32};
 
 use algorithm::HashMap;
 use tokio::sync::mpsc::Sender;
@@ -11,10 +11,11 @@ use crate::{ConfigOption, HcMsg};
 #[derive(Clone)]
 pub struct HcNodeState {
     next: Arc<AtomicU32>,
+    unique: Arc<AtomicI64>,
     pub config: Arc<ConfigOption>,
     pub sender: Sender<HcMsg>,
     pub service_map: Arc<RwLock<HashMap<String, u32>>>,
-    pub redis_url_map: Arc<RwLock<HashMap<u32, Vec<String>>>>,
+    pub redis_url_map: Arc<RwLock<HashMap<u32, String>>>,
 }
 
 impl HcNodeState {
@@ -22,14 +23,19 @@ impl HcNodeState {
         Self {
             config: Arc::new(config),
             next: Arc::new(AtomicU32::new(1)),
+            unique: Arc::new(AtomicI64::new(u32::MAX as i64 + 1)),
             sender,
             service_map: Arc::new(RwLock::new(HashMap::new())),
             redis_url_map: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    pub fn next_seq(&mut self) -> u32 {
-        self.next.fetch_add(1, Ordering::Relaxed)
+    pub fn next_seq(&mut self) -> i64 {
+        self.next.fetch_add(1, Ordering::Relaxed) as i64
+    }
+    
+    pub fn next_unique_seq(&mut self) -> i64 {
+        self.unique.fetch_add(1, Ordering::Relaxed)
     }
 
     pub fn insert_service(&mut self, name: String, id: u32) {
@@ -42,7 +48,7 @@ impl HcNodeState {
         v.get(name).map(|v| *v)
     }
 
-    pub fn set_redis_url(&mut self, val: Vec<String>) -> u32 {
+    pub fn set_redis_url(&mut self, val: String) -> u32 {
         let mut map = self.redis_url_map.write().unwrap();
         let index = map.len() as u32 + 1;
         for (k, v) in map.iter() {
@@ -59,7 +65,7 @@ impl HcNodeState {
         map.contains_key(url_id)
     }
 
-    pub fn get_redis_url(&mut self, url_id: &u32) -> Option<Vec<String>> {
+    pub fn get_redis_url(&mut self, url_id: &u32) -> Option<String> {
         let map = self.redis_url_map.read().unwrap();
         map.get(url_id).map(|v| v.clone())
     }

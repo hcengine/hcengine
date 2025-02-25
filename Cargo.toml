@@ -50,5 +50,7 @@ bpaf = { version = "0.9.8", features = [
     "autocomplete",
 ] }
 
+futures-util = "0.3"
+
 # [workspace]
 # members = ["hclua-cjson", "hclua-socket"]

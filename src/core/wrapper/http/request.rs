@@ -4,7 +4,7 @@ use hclua::{impl_obj_fn, Lua, LuaObject, LuaPush, ObjectMacro};
 use webparse::{Request, Scheme, Url, Version, WebError};
 use wmhttp::{Body, RecvRequest};
 
-#[derive(ObjectMacro)]
+#[derive(ObjectMacro, Debug)]
 #[hclua_cfg(name = Request)]
 #[hclua_cfg(light)]
 pub struct WrapperRequest {

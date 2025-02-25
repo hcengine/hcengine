@@ -10,6 +10,26 @@ pub enum RedisCmd {
     Batch(Vec<Cmd>),
 }
 
+impl RedisCmd {
+    pub fn is_no_response(&self) -> bool {
+        match self {
+            RedisCmd::One(cmd) => cmd.is_no_response(),
+            RedisCmd::Batch(_) => false,
+        }
+    }
+
+    pub fn subs_list(&self) -> Vec<String> {
+        let result = match self {
+            RedisCmd::One(cmd) => cmd.args_iter().map(|v| match v {
+                redis::Arg::Simple(arg) => String::from_utf8_lossy(arg).to_string(),
+                redis::Arg::Cursor => String::new(),
+            }).collect(),
+            RedisCmd::Batch(_) => vec![],
+        };
+        result
+    }
+}
+
 pub struct RedisMsg {
     pub url_id: u32,
     pub cmd: RedisCmd,

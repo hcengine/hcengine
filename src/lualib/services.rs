@@ -106,7 +106,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 println!("close !!!!!!!!! ============ {:p}", service);
                 let mut conf = conf.0;
                 conf.creator = (*service).get_id();
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 conf.set_session(session);
                 (*service).new_service(conf);
                 session
@@ -123,7 +123,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "send",
             hclua::function1(move |msg: &mut LuaMsg| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 msg.sessionid = session;
                 let sender = (*service).node.sender.clone();
                 let msg = Box::from_raw(msg);
@@ -193,7 +193,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             hclua::function3(
                 move |method: String, url: String, settings: Option<WrapSerde<Settings>>| -> i64 {
                     println!("settings = {:?}", settings);
-                    let session = (*service).node.next_seq() as i64;
+                    let session = (*service).node.next_seq();
                     let id = (*service).get_id();
                     let sender = (*service).worker.sender.clone();
                     let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
@@ -212,7 +212,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             hclua::function3(
                 move |method: String, url: String, settings: Option<WrapSerde<Settings>>| -> i64 {
                     println!("settings = {:?}", settings);
-                    let session = (*service).node.next_seq() as i64;
+                    let session = (*service).node.next_seq();
                     let id = (*service).get_id();
                     let sender = (*service).worker.sender.clone();
                     let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
@@ -228,7 +228,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "close_socket",
             hclua::function2(move |id: u64, reason: Option<String>| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
@@ -249,7 +249,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             hclua::function2(move |id: u64, msg: &mut WrapMessage| -> i64 {
                 println!("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {}", id);
                 let msg = Box::from_raw(msg);
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
@@ -262,7 +262,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "bind_http",
             hclua::function1(move |addr: String| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 let id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
@@ -281,7 +281,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "send_response",
             hclua::function2(move |id: u64, res: WrapperObject<WrapperResponse>| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
                     let _ = sender.send(HcMsg::http_outcoming(id, res.0.r)).await;
@@ -298,7 +298,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "http_request",
             hclua::function2(move |req: WrapperObject<WrapperRequest>, option: Option<WrapperObject<WrapperClientOption>>| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 tokio::spawn(async move {
@@ -310,15 +310,20 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         
         table.set(
             "set_redis_url",
-            hclua::function1(move |url_list: Vec<String>| -> u32 {
-                (*service).node.set_redis_url(url_list)
+            hclua::function1(move |redis_url: String| -> u32 {
+                (*service).node.set_redis_url(redis_url)
             }),
         );
 
         table.set(
             "run_redis_command",
             hclua::function2(move |url_id: u32, cmd: RedisWrapperCmd| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                // 订阅消息, session会被重复利用
+                let session = if cmd.0.is_no_response() {
+                    (*service).node.next_unique_seq()
+                } else {
+                    (*service).node.next_seq()
+                };
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 let cmd = RedisCmd::One(cmd.0);
@@ -332,7 +337,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         table.set(
             "run_redis_batch_command",
             hclua::function2(move |url_id: u32, cmd: RedisWrapperBatchCmd| -> i64 {
-                let session = (*service).node.next_seq() as i64;
+                let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 let cmd = RedisCmd::Batch(cmd.0);
@@ -346,7 +351,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         //     "delay",
         //     hclua::function0(move || -> i64 {
         //         println!("delay ooooooooooooooooooooooo");
-        //         let session = (*service).node.next_seq() as i64;
+        //         let session = (*service).node.next_seq();
         //         let (sender, receiver) = channel();
         //         println!("delay zzzzzzzzzzzzzz");
         //         tokio::spawn(async move {

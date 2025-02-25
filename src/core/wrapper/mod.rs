@@ -7,6 +7,7 @@ use ::redis::Value;
 pub use redis::*;
 use wmhttp::{RecvRequest, RecvResponse};
 
+#[derive(Debug)]
 pub enum WrapperLuaMsg {
     Request(WrapperRequest),
     Response(WrapperResponse),

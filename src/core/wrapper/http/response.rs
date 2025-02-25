@@ -3,7 +3,7 @@ use hclua::{Lua, LuaObject, ObjectMacro};
 use webparse::{Response, StatusCode, WebError};
 use wmhttp::{Body, RecvResponse};
 
-#[derive(ObjectMacro)]
+#[derive(ObjectMacro, Debug)]
 #[hclua_cfg(name = Response)]
 #[hclua_cfg(light)]
 pub struct WrapperResponse {

@@ -97,18 +97,19 @@ hc.coroutine_num = function()
 end
 
 ---@return integer | boolean, string
-hc.wait = function(session, receiver)
+hc.wait = function(session, is_repeat)
     print("wait session = ", session)
     if session then
         session_id_coroutine[session] = co_running()
-        session_id_record[session] = hc.now_ms()
-    else
-        if type(receiver) ~= "number" then -- receiver is error message
-            return false, receiver
+        -- 重复接收的不检查超时
+        if not is_repeat then
+            session_id_record[session] = hc.now_ms()
+        else
+            session_id_record[session] = nil
         end
     end
 
-    print("hc.wait ", session, receiver)
+    print("hc.wait ", session)
     local a, b, c = co_yield()
     print("hc.wait yield ", a, b, c)
     if a then
@@ -125,7 +126,7 @@ hc.wait = function(session, receiver)
             return table.unpack(ret)
         else
             -- LuaMsg
-            return ret, receiver
+            return ret
         end
     else
         -- false, "BREAK", {...}

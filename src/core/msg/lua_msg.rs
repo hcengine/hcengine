@@ -102,10 +102,9 @@ impl LuaMsg {
     extern "C" fn read_obj(lua: *mut lua_State) -> libc::c_int {
         println!("read_obj");
         let msg: &mut LuaMsg = unwrap_or!(hclua::read_wrapper_light_userdata(lua, 1), return 0);
-        println!("read_obj msg success value = {:?}", msg.obj.is_some());
+        println!("read_obj msg success value = {:?}", msg.obj);
         let obj = unwrap_or!(msg.obj.take(), return 0);
-        obj.push_to_lua(lua);
-        0
+        obj.push_to_lua(lua)
     }
 
     
