@@ -18,6 +18,8 @@ impl Config {
     pub const TY_TIMER: u8 = 7;
     pub const TY_ERROR: u8 = 8;
     pub const TY_REDIS: u8 = 9;
+    pub const TY_HTTP_RES: u8 = 10;
+    pub const TY_HTTP_REQ: u8 = 11;
 
     pub fn get_workid(service_id: u32) -> usize {
         (service_id >> Self::WORKER_ID_SHIFT) as usize

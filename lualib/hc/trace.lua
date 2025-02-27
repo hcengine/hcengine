@@ -88,4 +88,5 @@ local function trace(value, ...)
     print(ret)
 end
 
+hc.watch = watch
 hc.print = trace

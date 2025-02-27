@@ -45,27 +45,29 @@ local function _hc_http_incoming(id, req)
 end 
 
 
----@param id integer
----@param res Response | nil
----@param err string | nil
-local function _hc_http_return(id, res, err)
-    if callback_request[id] then
-        callback_request[id](res, err)
-        callback_request[id] = nil
-    end
-end
+-- ---@param id integer
+-- ---@param res Response | nil
+-- ---@param err string | nil
+-- local function _hc_http_return(id, res, err)
+--     if callback_request[id] then
+--         callback_request[id](res, err)
+--         callback_request[id] = nil
+--     end
+-- end
 
---@param req Request
---@param option ClientOption
+---@param req Request
+---@param option ClientOption | nil
+---@return Response | nil, string | nil
 hc.http_request = function(req, option, callback)
-    local session = _http_request(req, option)
-    if session ~= 0 then
-        callback_request[session] = callback
-    end
+    return hc.wait(_http_request(req, option))
+    -- local session = _http_request(req, option)
+    -- if session ~= 0 then
+    --     callback_request[session] = callback
+    -- end
 end
 
 
 _G["hc_http_incoming"] = _hc_http_incoming
-_G["hc_http_return"] = _hc_http_return
+-- _G["hc_http_return"] = _hc_http_return
 
 

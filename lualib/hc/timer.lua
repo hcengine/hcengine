@@ -34,7 +34,7 @@ hc.register_protocol({
         if type(v) == "thread" then
             hc.co_resume(v, timerid, msg:get_err())
         else
-            v()
+            hc.async(v)
         end
     end,
 })

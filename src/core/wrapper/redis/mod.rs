@@ -123,10 +123,9 @@ impl LuaPush for RedisWrapperResult {
 fn read_at_index(cmd: &mut Cmd, lua: *mut lua_State, index: i32, is_first: bool) -> Option<()> {
     unsafe {
         let t = hclua::lua_type(lua, index);
-        println!("index = {:?}, type = {:?}", index, t);
         match t {
             hclua::LUA_TBOOLEAN => {
-                // if is_first { hclua::Lua::lua_error(lua, "首个参数必须为字符串"); };
+                if is_first { hclua::Lua::lua_error(lua, "首个参数必须为字符串"); };
                 if let Some(v) = <bool as LuaRead>::lua_read_at_position(lua, index) {
                     if v {
                         cmd.arg("1");
@@ -138,19 +137,16 @@ fn read_at_index(cmd: &mut Cmd, lua: *mut lua_State, index: i32, is_first: bool)
                 }
             }
             hclua::LUA_TNUMBER => {
+                if is_first { hclua::Lua::lua_error(lua, "首个参数必须为字符串"); };
                 if let Some(v) = <f64 as LuaRead>::lua_read_at_position(lua, index) {
-                    println!("v === {v}");
                     cmd.arg(v);
                 } else {
                     return None;
                 }
-                // if is_first { hclua::Lua::lua_error(lua, "首个参数必须为字符串"); };
             }
             hclua::LUA_TSTRING => {
                 if is_first {
                     if let Some(v) = <String as LuaRead>::lua_read_at_position(lua, index) {
-                        println!("LUA_TSTRING v === {v}");
-
                         let c = v.to_uppercase();
                         cmd.arg(&c);
                         if &c == "SUBSCRIBE" || &c == &"PSUBSCRIBE" {
@@ -162,8 +158,6 @@ fn read_at_index(cmd: &mut Cmd, lua: *mut lua_State, index: i32, is_first: bool)
                     }
                 } else {
                     if let Some(v) = LuaUtils::read_str_to_vec(lua, index) {
-                        println!("LUA_TSTRING v === {v:?}");
-
                         cmd.arg(v);
                     } else {
                         return None;
@@ -185,13 +179,11 @@ impl LuaRead for RedisWrapperCmd {
         _pop: i32,
     ) -> Option<RedisWrapperCmd> {
         let args = unsafe { if index < 0 { -index } else { hclua::lua_gettop(lua) - index.abs() + 1 } };
-        println!("RedisWrapperCmd index == {index} args = {args}");
         if args < 0 {
             return None;
         }
         let mut cmd = Cmd::new();
         for i in 0..args {
-            println!("index = {}, i = {} args = {}", i + index, i, args);
             unwrap_or!(read_at_index(&mut cmd, lua, i + index, i == 0), return None);
         }
         Some(RedisWrapperCmd(cmd))

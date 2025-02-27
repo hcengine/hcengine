@@ -19,7 +19,7 @@ log = "0.4.22"
 # hcnet = "0.1"
 # hclua = {version = "0.1.5", features = ["lua52"]}
 # algorithm = { path = "../algorithm" }
-algorithm = {version = "0.1.17", features = ["ttl"]}
+algorithm = {version = "^0.1.18", features = ["ttl"]}
 # webparse = "0.3.0"
 # wmhttp = "0.3.1"
 wmhttp = { path = "../wmhttp" }

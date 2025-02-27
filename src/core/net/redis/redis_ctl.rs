@@ -114,7 +114,6 @@ impl RedisCtl {
                     data,
                     ..Default::default()
                 };
-                println!("is real redis value = {:?}", v);
                 msg.obj = Some(WrapperLuaMsg::redis(v));
 
                 let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
@@ -134,22 +133,15 @@ impl RedisCtl {
         worker: HcWorkerState,
         mut receiver: Receiver<()>,
     ) -> RedisResult<()> {
-        println!("innser_do_subs_request ==============================");
         let (mut sink, mut stream) = client.get_async_pubsub().await?.split();
-
-        println!("end ============================== ?????????????");
         let list = msg.cmd.subs_list();
         let (s, e) = list.split_at(1);
-        println!("eeeeeeeeeeeeeeeeeeee subs = {:?}", e);
         match &*s[0].to_uppercase() {
             "SUBSCRIBE" => sink.subscribe(e).await?,
             "PSUBSCRIBE" => sink.psubscribe(e).await?,
             _ => unreachable!(),
         };
-        println!("end subs~~~~~~~~~~~~~~~~~~");
-
         let (session, service_id) = (msg.session, msg.service_id);
-
         loop {
             tokio::select! {
                 msg = stream.next() => {
@@ -165,7 +157,6 @@ impl RedisCtl {
                             data,
                             ..Default::default()
                         };
-                        println!("is real redis value = {:?}", v);
                         msg.obj = Some(WrapperLuaMsg::redis(v));
                         let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
                     } else {
@@ -179,7 +170,6 @@ impl RedisCtl {
                 }
             }
         }
-        Ok(())
     }
 
     fn convert_msg(msg: Msg) -> RedisResult<Value> {

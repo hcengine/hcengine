@@ -1,7 +1,8 @@
+use algorithm::buf::BinaryMut;
 use tokio::sync::mpsc::Sender;
 use wmhttp::{Client, ClientOption, ProtError, ProtResult, RecvRequest, RecvResponse};
 
-use crate::{HcMsg, HcWorkerState};
+use crate::{wrapper::WrapperLuaMsg, Config, HcMsg, HcWorkerState, LuaMsg};
 
 // TODO 缓存请求, 复用链接
 pub struct HttpClient {
@@ -18,19 +19,44 @@ impl HttpClient {
     ) -> ProtResult<()> {
         match Self::inner_request(req, option).await {
             Ok(res) => {
-                let _ = sender
-                    .send(HcMsg::http_return(service_id, session, Some(res), None))
-                    .await;
+                let data = BinaryMut::new();
+                let mut msg = LuaMsg {
+                    ty: Config::TY_HTTP_RES,
+                    sender: 0,
+                    receiver: service_id,
+                    sessionid: session,
+                    err: None,
+                    data,
+                    ..Default::default()
+                };
+                msg.obj = Some(WrapperLuaMsg::response(res));
+                let _ = sender.send(HcMsg::RespMsg(msg)).await;
+                
+                // let _ = sender
+                //     .send(HcMsg::http_return(service_id, session, Some(res), None))
+                //     .await;
             }
             Err(e) => {
-                let _ = sender
-                    .send(HcMsg::http_return(
-                        service_id,
-                        session,
-                        None,
-                        Some(format!("{}", e)),
-                    ))
-                    .await;
+                let data = BinaryMut::new();
+                let msg = LuaMsg {
+                    ty: Config::TY_ERROR,
+                    sender: 0,
+                    receiver: service_id,
+                    sessionid: session,
+                    err: Some(format!("{}", e)),
+                    data,
+                    ..Default::default()
+                };
+                let _ = sender.send(HcMsg::RespMsg(msg)).await;
+
+                // let _ = sender
+                //     .send(HcMsg::http_return(
+                //         service_id,
+                //         session,
+                //         None,
+                //         Some(format!("{}", e)),
+                //     ))
+                //     .await;
             }
         }
         Ok(())

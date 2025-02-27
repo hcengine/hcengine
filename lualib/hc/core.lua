@@ -20,18 +20,20 @@ local protocol = {}
 local timer_routine = {}
 local timer_profile_trace = {}
 
+---@class hc : core
+local hc = core
+
 local function wrap_co_resume(co, ...)
     local ok, err = co_resume(co, ...)
     if not ok then
         err = tostring(err)
         co_close(co)
+        hc.print("%s", hc.traceback(true))
         error(err)
     end
     return ok, err
 end
 
----@class hc : core
-local hc = core
 
 local co_num = 0
 
@@ -310,6 +312,8 @@ hc.TY_NET = 6;
 hc.TY_TIMER = 7;
 hc.TY_ERROR = 8;
 hc.TY_REDIS = 9;
+hc.TY_HTTP_RES = 10;
+hc.TY_HTTP_REQ = 11;
 
 hc.register_protocol = function(t)
     local ty = t.ty
@@ -406,17 +410,34 @@ hc.register_protocol({
 })
 
 hc.register_protocol({
-    name = "lua",
+    name = "redis",
     ty = hc.TY_REDIS,
     pack = hc.pack,
     unpack = function(msg)
-        hc.print("redis msg = %o", msg)
         return msg:read_obj()
     end,
     dispatch = function() end,
 })
 
+hc.register_protocol({
+    name = "http-res",
+    ty = hc.TY_HTTP_RES,
+    pack = hc.pack,
+    unpack = function(msg)
+        return msg:read_obj()
+    end,
+    dispatch = function() end,
+})
 
+hc.register_protocol({
+    name = "http-req",
+    ty = hc.TY_HTTP_REQ,
+    pack = hc.pack,
+    unpack = function(msg)
+        return msg:read_obj()
+    end,
+    dispatch = function() end,
+})
 
 ------protocol message ----------------------
 ---------------------------------------------

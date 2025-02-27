@@ -176,11 +176,11 @@ impl LuaService {
         let _: Option<()> = self.lua.read_func2("hc_http_incoming", id, r);
     }
 
-    pub fn http_return(&mut self, id: i64, res: Option<RecvResponse>, err: Option<String>) {
-        println!("lua service open_conn ================ {:?}", id);
-        let res = res.map(|r: webparse::Response<wmhttp::Body>| WrapperResponse::new(r));
-        let _: Option<()> = self.lua.read_func3("hc_http_return", id, res, err);
-    }
+    // pub fn http_return(&mut self, id: i64, res: Option<RecvResponse>, err: Option<String>) {
+    //     println!("lua service open_conn ================ {:?}", id);
+    //     let res = res.map(|r: webparse::Response<wmhttp::Body>| WrapperResponse::new(r));
+    //     let _: Option<()> = self.lua.read_func3("hc_http_return", id, res, err);
+    // }
 
     pub fn recv_msg(&mut self, id: u64, msg: WrapMessage) {
         println!("lua service net_msg ================ {:?}", id);
