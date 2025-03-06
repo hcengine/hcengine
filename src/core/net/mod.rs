@@ -3,6 +3,7 @@ mod common;
 mod server;
 pub mod http;
 mod redis;
+mod mysql;
 
 use std::net::SocketAddr;
 
@@ -11,6 +12,7 @@ pub use common::CommonHandler;
 use hcnet::NetSender;
 pub use server::NetServer;
 pub use redis::{RedisCmd, RedisSender, RedisMsg, RedisCtl};
+pub use mysql::*;
 
 #[derive(Debug, Clone)]
 pub struct NetInfo {

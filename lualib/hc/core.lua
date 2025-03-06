@@ -199,7 +199,6 @@ end
 local function _wrap_response(msg)
     hc.print("msg = %o", getmetatable(msg))
     local p = protocol[msg.ty]
-    hc.print("msg.ty = %o", msg.ty)
     if not p then
         error(string.format("handle unknown ty: %s. sender %u", msg.ty, msg.sender))
     end
@@ -314,6 +313,7 @@ hc.TY_ERROR = 8;
 hc.TY_REDIS = 9;
 hc.TY_HTTP_RES = 10;
 hc.TY_HTTP_REQ = 11;
+hc.TY_MYSQL = 12;
 
 hc.register_protocol = function(t)
     local ty = t.ty
@@ -412,6 +412,16 @@ hc.register_protocol({
 hc.register_protocol({
     name = "redis",
     ty = hc.TY_REDIS,
+    pack = hc.pack,
+    unpack = function(msg)
+        return msg:read_obj()
+    end,
+    dispatch = function() end,
+})
+
+hc.register_protocol({
+    name = "mysql",
+    ty = hc.TY_MYSQL,
     pack = hc.pack,
     unpack = function(msg)
         return msg:read_obj()
