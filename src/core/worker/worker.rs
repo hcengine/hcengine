@@ -17,11 +17,7 @@ use crate::{
     core::{
         msg::{HcNet, HcOper, ListenServer, LuaMsg},
         HcMsg,
-    },
-    http::{HttpSender, HttpServer},
-    msg::{ConnectServer, HcHttp, ListenHttpServer},
-    CommonHandler, Config, HcNodeState, LuaService, NetInfo, NetServer, RedisCtl, RedisMsg,
-    RedisSender, ServiceConf, ServiceWrapper, WrapMessage,
+    }, http::{HttpSender, HttpServer}, msg::{ConnectServer, HcHttp, ListenHttpServer}, CommonHandler, Config, HcNodeState, LuaService, MysqlCtl, MysqlMsg, MysqlSender, NetInfo, NetServer, RedisCtl, RedisMsg, RedisSender, ServiceConf, ServiceWrapper, WrapMessage
 };
 
 use super::HcWorkerState;
@@ -37,6 +33,7 @@ pub struct HcWorker {
     pub net_servers: HashMap<u64, NetSender>,
     pub net_clients: HashMap<u64, NetInfo>,
     pub redis_clients: HashMap<u32, RedisSender>,
+    pub mysql_clients: HashMap<u32, MysqlSender>,
 }
 
 impl HcWorker {
@@ -55,6 +52,7 @@ impl HcWorker {
                 http_servers: HashMap::new(),
                 http_clients: HashMap::new(),
                 redis_clients: HashMap::new(),
+                mysql_clients: HashMap::new(),
             },
             state,
         )
@@ -79,6 +77,9 @@ impl HcWorker {
             },
             HcMsg::Redis(msg) => {
                 self.redis_msg(msg).await;
+            }
+            HcMsg::Mysql(msg) => {
+                self.mysql_msg(msg).await;
             }
             HcMsg::Http(msg) => match msg {
                 HcHttp::ListenHttpServer(listen) => {
@@ -641,6 +642,54 @@ impl HcWorker {
             }
         } else {
             self.start_redis_connect(msg).await;
+            return;
+        }
+    }
+
+    
+    async fn start_mysql_connect(&mut self, msg: MysqlMsg) {
+        if let Some(v) = self.node_state.get_mysql_url(&msg.url_id) {
+            let (tx, rx) = unbounded_channel();
+            let mut ctl = MysqlCtl::new(rx, v, self.state.clone(), self.node_state.clone());
+            let sender = MysqlSender {
+                sender: tx,
+                id: msg.url_id,
+            };
+            let _ = sender.sender.send(msg);
+            self.mysql_clients.insert(sender.id, sender);
+            tokio::spawn(async move {
+                ctl.server().await;
+            });
+
+        } else {
+            let data = BinaryMut::new();
+            let _ = self
+                .node_state
+                .sender
+                .send(HcMsg::RespMsg(LuaMsg {
+                    ty: Config::TY_ERROR,
+                    sender: 0,
+                    receiver: msg.service_id,
+                    sessionid: msg.session,
+                    err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
+                    data,
+                    ..Default::default()
+                }))
+                .await;
+        }
+    }
+
+    pub async fn mysql_msg(&mut self, msg: MysqlMsg) {
+        if let Some(client) = self.mysql_clients.get_mut(&msg.url_id) {
+            match client.sender.send(msg) {
+                Err(e) => {
+                    self.mysql_clients.remove(&e.0.url_id);
+                    self.start_mysql_connect(e.0).await;
+                }
+                _ => {}
+            }
+        } else {
+            self.start_mysql_connect(msg).await;
             return;
         }
     }

@@ -176,45 +176,71 @@ hc.async(function()
     end)
 end)
 
-hc.async(function() 
-    local redis = require("hc.db.redis")
+-- hc.async(function() 
+--     local redis = require("hc.db.redis")
 
-    local id = redis:set_redis_url("redis://192.168.17.210:6379")
-    -- hc.print("redis id === %o zzzzzzzzzzzz", id)
-    -- local ret, err = redis:get("xx")
-    -- hc.print("redis ret === %o err = %o", ret, err)
-    -- local ret, err = redis:get("xx")
-    -- hc.print("redis ret === %o err = %o", ret, err)
-    local now = hc.now_ms();
-    hc.print("sleep pre = %o", hc.now_ms())
-    hc.sleep(3000)
-    hc.print("sleep after = %o", hc.now_ms() - now)
-    local ret, err = redis.get_with_index(id, "xx")
-    hc.print("redis ret === %o err = %o", ret, err)
-    hc.print("sssssssssssssssss");
-    -- hc.run_subs_command(function(val)
-    --     hc.print("redis subs val = %o", val)
-    -- end, "channel")
-    redis:run_psubs_command(function(val)
-        hc.print("redis subs val = %o", val)
-    end, "channel*")
-    hc.print("zzzzzzzzzzzzz");
+--     local id = redis:set_redis_url("redis://192.168.17.210:6379")
+--     -- hc.print("redis id === %o zzzzzzzzzzzz", id)
+--     -- local ret, err = redis:get("xx")
+--     -- hc.print("redis ret === %o err = %o", ret, err)
+--     -- local ret, err = redis:get("xx")
+--     -- hc.print("redis ret === %o err = %o", ret, err)
+--     local now = hc.now_ms();
+--     hc.print("sleep pre = %o", hc.now_ms())
+--     hc.sleep(3000)
+--     hc.print("sleep after = %o", hc.now_ms() - now)
+--     local ret, err = redis.get_with_index(id, "xx")
+--     hc.print("redis ret === %o err = %o", ret, err)
+--     hc.print("sssssssssssssssss");
+--     -- hc.run_subs_command(function(val)
+--     --     hc.print("redis subs val = %o", val)
+--     -- end, "channel")
+--     redis:run_psubs_command(function(val)
+--         hc.print("redis subs val = %o", val)
+--     end, "channel*")
+--     hc.print("zzzzzzzzzzzzz");
+--     -- hc.telnet 192.168.17.210 6379
+-- end)
+
+-- hc.async(function()
+--     local redis = require("hc.db.redis")
+--     hc.print("zzzzzzzzzzzzzzzzzzz")
+--     local index = 0
+--     while true do
+--         hc.print("aaaaaaaaaaaaaaa")
+--         hc.sleep(10000)
+--         hc.print("bbbbbbbbbbbbb")
+--         redis:run_redis_command("PUBLISH", "channel", string.format("ok%d", index))
+--         index = index + 1
+--         collectgarbage("collect")
+--     end
+-- end)
+
+
+hc.async(function() 
+
+    local mysql = require("hc.db.mysql")
+    hc.print("aaaaaaaaaaaaaaaaaaaaaaaaa")
+    hc.print("mysql = %o", hc.env("mysql"))
+    hc.print("bbbbbbbbbbbbbbbbbbbbbbbbbbb")
+    local id = mysql:set_mysql_url(hc.env("mysql"))
+    hc.print("cccccccccccccccccccccccccc id = %o", id)
+    local ret, err = hc.wait(hc.run_mysql_only(id, "select 1"))
+    hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
+    local ret, err = hc.wait(hc.run_mysql_one(id, "select 1, 2, 3, \"a\""))
+    hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
+    local ret, err = hc.wait(hc.run_mysql_query(id, "select * from engine_account limit 10"))
+    hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
+
+    mysql:run_mysql_iter(function(val, err)
+        hc.print("zzzzzzzzzzzzzzzzz val = %o is_end = %o err = %o", val, err)
+    end, "select * from engine_account limit 10")
+
+    hc.print("end mysql")
     -- hc.telnet 192.168.17.210 6379
 end)
 
-hc.async(function()
-    local redis = require("hc.db.redis")
-    hc.print("zzzzzzzzzzzzzzzzzzz")
-    local index = 0
-    while true do
-        hc.print("aaaaaaaaaaaaaaa")
-        hc.sleep(10000)
-        hc.print("bbbbbbbbbbbbb")
-        redis:run_redis_command("PUBLISH", "channel", string.format("ok%d", index))
-        index = index + 1
-        collectgarbage("collect")
-    end
-end)
+
 
 -- -- hc.async(function()
 -- --     -- hc.print("cxxxxxxxxxxxxxxxx ret = %d", 0)

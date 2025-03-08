@@ -43,7 +43,7 @@ impl MysqlCtl {
         worker: HcWorkerState,
         node: HcNodeState,
     ) -> Self {
-        let opts = Opts::from_url("mysql://localhost/db?enable_cleartext_plugin=true").expect("ok");
+        let opts = Opts::from_url(&*mysql_url).expect("ok");
         let client_pool = mysql_async::Pool::new(opts);
         Self {
             receiver,
@@ -103,11 +103,14 @@ impl MysqlCtl {
         msg: MysqlMsg,
         worker: &mut HcWorkerState,
     ) -> Result<(), Error> {
-        let con = client.await?;
         let (session, service_id) = (msg.session, msg.service_id);
-        let ret = match msg.cmd {
+        println!("inner_do_request mysql  value = {:?}", session);
+        let con = client.await?;
+        match msg.cmd {
             super::MysqlCmd::Only(cmd) => {
+                println!("inner_do_request mysql value = {:?}", cmd);
                 let v = cmd.first::<Value, _>(con).await?;
+                println!("mysql value = {:?}", v);
                 Self::send_mysql_value(session, service_id, worker, MysqlValue::First(v)).await
             }
             super::MysqlCmd::One(cmd) => {
@@ -142,7 +145,7 @@ impl MysqlCtl {
                 }
             }
             super::MysqlCmd::Insert(cmd) => {
-                let mut result = cmd.run(con).await?;
+                let result = cmd.run(con).await?;
                 Self::send_mysql_value(
                     session,
                     service_id,
@@ -150,10 +153,10 @@ impl MysqlCtl {
                     MysqlValue::Only(Value::UInt(result.last_insert_id().unwrap_or_default())),
                 )
                 .await;
-                result.drop_result().await;
+                let _ = result.drop_result().await;
             }
             super::MysqlCmd::Update(cmd) => {
-                let mut result = cmd.run(con).await?;
+                let result = cmd.run(con).await?;
                 Self::send_mysql_value(
                     session,
                     service_id,
@@ -161,7 +164,10 @@ impl MysqlCtl {
                     MysqlValue::Only(Value::UInt(result.affected_rows())),
                 )
                 .await;
-                result.drop_result().await;
+                let _ = result.drop_result().await;
+            }
+            super::MysqlCmd::Ignore(cmd) => {
+                cmd.ignore(con).await?;
             }
             _ => todo!(),
         };
@@ -180,11 +186,13 @@ impl MysqlCtl {
         loop {
             tokio::select! {
                 val = self.receiver.recv() => {
+                    println!("mysql !!!!!!!!! receiver = {:?}", val);
                     // 所有的sender均被关掉, 退出
                     if let Some(v) = val {
                         let c = self.client_pool.get_conn();
                         let worker = self.worker.clone();
                         tokio::spawn(async move {
+                            println!("server ! mysql do requeset = {:?}", v);
                             Self::do_request(c, v, worker).await;
                         });
                     } else {

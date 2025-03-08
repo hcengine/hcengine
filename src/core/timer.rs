@@ -33,7 +33,7 @@ impl TimerConf {
     pub fn get_repeat_timer() -> u64 {
         static mut OFFSET: u32 = 1;
         static mut CALL_TIMES: u32 = 0;
-        static mut LOCK: Mutex<()> = Mutex::new(());
+        static LOCK: Mutex<()> = Mutex::new(());
         unsafe {
             let _guard = LOCK.lock();
             CALL_TIMES += 1;

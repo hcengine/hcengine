@@ -5,7 +5,7 @@ use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    http::{HttpClient, HttpServer}, wrapper::{RedisWrapperBatchCmd, RedisWrapperCmd, WrapperClientOption, WrapperRedisValue, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, RedisCmd, ServiceConf, ServiceWrapper, TimerConf
+    http::{HttpClient, HttpServer}, wrapper::{RedisWrapperBatchCmd, RedisWrapperCmd, WrapperClientOption, WrapperRedisValue, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, MysqlCmd, RedisCmd, ServiceConf, ServiceWrapper, TimerConf
 };
 
 use super::WrapMessage;
@@ -347,6 +347,42 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 session
             }),
         );
+
+        
+        table.set(
+            "set_mysql_url",
+            hclua::function1(move |mysql_url: String| -> Result<u32, mysql_async::Error> {
+                (*service).node.set_mysql_url(mysql_url)
+            }),
+        );
+
+        macro_rules! run_mysql {
+            ($expr: expr, $name: expr) => {
+                table.set(
+                    $expr,
+                    hclua::function2(move |url_id: u32, sql: String| -> i64 {
+                        let session = (*service).node.next_seq();
+                        let service_id = (*service).get_id();
+                        let sender = (*service).worker.sender.clone();
+                        let cmd = $name(sql);
+                        tokio::spawn(async move {
+                            let _ = sender.send(HcMsg::mysql_msg(url_id, service_id, session, cmd)).await;
+                        });
+                        session
+                    }),
+                );
+            };
+        }
+
+        run_mysql!("run_mysql_only", MysqlCmd::Only);
+        run_mysql!("run_mysql_one", MysqlCmd::One);
+        run_mysql!("run_mysql_query", MysqlCmd::Query);
+        run_mysql!("run_mysql_iter", MysqlCmd::Iter);
+        run_mysql!("run_mysql_insert", MysqlCmd::Insert);
+        run_mysql!("run_mysql_update", MysqlCmd::Update);
+        run_mysql!("run_mysql_ignore", MysqlCmd::Ignore);
+
+
         // table.set(
         //     "delay",
         //     hclua::function0(move || -> i64 {

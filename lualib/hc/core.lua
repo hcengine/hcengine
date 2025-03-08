@@ -354,6 +354,7 @@ hc.register_protocol({
 hc.register_protocol({
     name = "integer",
     ty = hc.TY_INTEGER,
+    auto_unpack = true,
     pack = function(val)
         local msg = LuaMsg.new()
         msg.ty = hc.TY_INTEGER
@@ -362,7 +363,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_i64(), msg:get_err()
+        return { msg:read_i64(), msg:get_err() }
     end,
     dispatch = function() end,
 })
@@ -370,6 +371,7 @@ hc.register_protocol({
 hc.register_protocol({
     name = "number",
     ty = hc.TY_NUMBER,
+    auto_unpack = true,
     pack = function(val)
         local msg = LuaMsg.new()
         msg.ty = hc.TY_NUMBER
@@ -378,7 +380,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_f64(), msg:get_err()
+        return { msg:read_f64(), msg:get_err() }
     end,
     dispatch = function() end,
 })
@@ -386,6 +388,7 @@ hc.register_protocol({
 hc.register_protocol({
     name = "string",
     ty = hc.TY_STRING,
+    auto_unpack = true,
     pack = function(val)
         local msg = LuaMsg.new()
         msg.ty = hc.TY_STRING
@@ -394,7 +397,7 @@ hc.register_protocol({
     end,
     --- @param msg LuaMsg
     unpack = function(msg)
-        return msg:read_str(), msg:get_err()
+        return { msg:read_str(), msg:get_err() }
     end,
     dispatch = function() end,
 })
@@ -402,9 +405,11 @@ hc.register_protocol({
 hc.register_protocol({
     name = "lua",
     ty = hc.TY_ERROR,
+    auto_unpack = true,
     pack = hc.pack,
     unpack = function(msg)
-        return nil, msg:get_err()
+        hc.print("eeeeeeeeeeeeeeeeeee = %o", msg:get_err())
+        return { nil, msg:get_err() }
     end,
     dispatch = function() end,
 })

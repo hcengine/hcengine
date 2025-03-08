@@ -3,8 +3,7 @@ use hcnet::{Message, NetConn, NetSender, Settings};
 use wmhttp::{RecvRequest, RecvResponse};
 
 use crate::{
-    wrapper::RedisWrapperMsg, LuaMsg, NetInfo, RedisCmd, RedisMsg, ServiceConf, TimerNode,
-    WrapMessage,
+    wrapper::RedisWrapperMsg, LuaMsg, MysqlCmd, MysqlMsg, NetInfo, RedisCmd, RedisMsg, ServiceConf, TimerNode, WrapMessage
 };
 
 pub enum HcOper {
@@ -65,6 +64,7 @@ pub enum HcMsg {
     Net(HcNet),
     Http(HcHttp),
     Redis(RedisMsg),
+    Mysql(MysqlMsg),
     // NewService(ServiceConf),
     // Stop(i32),
     // CloseService(u32),
@@ -185,6 +185,15 @@ impl HcMsg {
 
     pub fn redis_msg(url_id: u32, service_id: u32, session: i64, cmd: RedisCmd) -> Self {
         HcMsg::Redis(RedisMsg {
+            url_id,
+            cmd,
+            service_id,
+            session,
+        })
+    }
+    
+    pub fn mysql_msg(url_id: u32, service_id: u32, session: i64, cmd: MysqlCmd) -> Self {
+        HcMsg::Mysql(MysqlMsg {
             url_id,
             cmd,
             service_id,

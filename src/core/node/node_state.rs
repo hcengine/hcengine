@@ -4,6 +4,7 @@ use std::{sync::{
 }, u32};
 
 use algorithm::HashMap;
+use mysql_async::Opts;
 use tokio::sync::mpsc::Sender;
 
 use crate::{ConfigOption, HcMsg};
@@ -16,6 +17,7 @@ pub struct HcNodeState {
     pub sender: Sender<HcMsg>,
     pub service_map: Arc<RwLock<HashMap<String, u32>>>,
     pub redis_url_map: Arc<RwLock<HashMap<u32, String>>>,
+    pub mysql_url_map: Arc<RwLock<HashMap<u32, String>>>,
 }
 
 impl HcNodeState {
@@ -27,6 +29,7 @@ impl HcNodeState {
             sender,
             service_map: Arc::new(RwLock::new(HashMap::new())),
             redis_url_map: Arc::new(RwLock::new(HashMap::new())),
+            mysql_url_map: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -67,6 +70,30 @@ impl HcNodeState {
 
     pub fn get_redis_url(&mut self, url_id: &u32) -> Option<String> {
         let map = self.redis_url_map.read().unwrap();
+        map.get(url_id).map(|v| v.clone())
+    }
+    
+    pub fn set_mysql_url(&mut self, val: String) -> Result<u32, mysql_async::Error> {
+        let ops = Opts::from_url(&val)?;
+        println!("mysql ops = {:?}", ops);
+        let mut map = self.mysql_url_map.write().unwrap();
+        let index = map.len() as u32 + 1;
+        for (k, v) in map.iter() {
+            if v == &val {
+                return Ok(*k);
+            }
+        }
+        map.insert(index, val);
+        Ok(index)
+    }
+
+    pub fn exist_mysql_url(&mut self, url_id: &u32) -> bool {
+        let map = self.mysql_url_map.read().unwrap();
+        map.contains_key(url_id)
+    }
+
+    pub fn get_mysql_url(&mut self, url_id: &u32) -> Option<String> {
+        let map = self.mysql_url_map.read().unwrap();
         map.get(url_id).map(|v| v.clone())
     }
 }
