@@ -56,7 +56,6 @@ end
 
 local function check_coroutine_timeout()
     local now = hc.now_ms()
-    print("check_coroutine_timeout", now)
     for id, value in pairs(session_id_record) do
         if now - value > 10000 then
             local co = session_id_coroutine[id]
@@ -100,7 +99,7 @@ end
 
 ---@return integer | boolean, string
 hc.wait = function(session, is_repeat)
-    print("wait session = ", session)
+    -- print("wait session = ", session)
     if session then
         session_id_coroutine[session] = co_running()
         -- 重复接收的不检查超时
@@ -111,9 +110,7 @@ hc.wait = function(session, is_repeat)
         end
     end
 
-    print("hc.wait ", session)
     local a, b, c = co_yield()
-    print("hc.wait yield ", a, b, c)
     if a then
         local proto = protocol[a.ty]
         if not proto then
@@ -157,12 +154,10 @@ hc.call = function(ty, receiver, ...)
     if receiver == 0 then
         error("call receiver == 0")
     end
-    print("zzzzzzzzzzzzzzz")
     ---@type LuaMsg
     local msg = p.pack(...)
     msg.sender = hc.id
     msg.receiver = receiver
-    print("2222222222222")
     return hc.wait(_send(msg))
 end
 
@@ -197,7 +192,6 @@ end
 
 ---@param msg LuaMsg
 local function _wrap_response(msg)
-    hc.print("msg = %o", getmetatable(msg))
     local p = protocol[msg.ty]
     if not p then
         error(string.format("handle unknown ty: %s. sender %u", msg.ty, msg.sender))
@@ -243,16 +237,13 @@ end
 --- comment
 --- @param msg LuaMsg
 local function _wrap_lua_msg_dispath(msg)
-    print("msg ============ ", msg)
     local ret = hc.unpack(msg)
     if type(ret) ~= "table" then
         print("未知的lua协议类型, 必须为数组")
         return
     end
-    print("msg ============ ret ", ret)
     local name = table.remove(ret, 1)
     -- local name, value = table.unpack(ret)
-    print("msg ============ zzzzzzzzzzzzzzzzzz ", msg)
     if type(name) ~= "string" then
         print("未知的协议消息或者协议参数")
         return
@@ -266,7 +257,6 @@ local function _wrap_lua_msg_dispath(msg)
     local sender = msg.sender
     local session = msg.sessionid
 
-    print("_wrap_lua_msg_dispath ============ ", sender, session)
     if session ~= 0 and sender ~= 0 then
         hc.response(msg.ty, sender, session, func(table.unpack(ret)))
     else
@@ -289,7 +279,6 @@ _G["hc_msg_call"] = _lua_msg_dispath
 _G["hc_msg_resp"] = _response
 _G["stop_world"] = _stop_world
 
-print("cccccccccccc?????")
 
 
 ---@param conf ServiceConf
@@ -408,7 +397,6 @@ hc.register_protocol({
     auto_unpack = true,
     pack = hc.pack,
     unpack = function(msg)
-        hc.print("eeeeeeeeeeeeeeeeeee = %o", msg:get_err())
         return { nil, msg:get_err() }
     end,
     dispatch = function() end,

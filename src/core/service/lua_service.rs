@@ -193,12 +193,10 @@ impl LuaService {
     }
 
     pub fn resp_msg(&mut self, msg: LuaMsg) {
-        println!("lua service resp_msg ================");
         let _: Option<()> = self.lua.read_func1("hc_msg_resp", msg);
     }
 
     pub fn tick_timer(&mut self, timer_id: u64) {
-        println!("lua service resp_msg ================");
         let _: Option<()> = self.lua.read_func1("hc_msg_resp", timer_id);
     }
 }

@@ -20,11 +20,9 @@ hc.register_protocol({
     israw = true,
     ---@param msg LuaMsg
     dispatch = function(msg)
-        print("timer dissssssssssssssssssss", msg)
         local timerid = msg:read_i64()
         local is_repeat = msg:read_bool()
         local v = timer_cache[timerid]
-        print("id = ", timerid, " ispreat = ", is_repeat, " call back = ", v)
         if not is_repeat then
             timer_cache[timerid] = nil
         end

@@ -63,11 +63,13 @@ function mysql.run_mysql_query_with_index(index, ...)
 end
 
 ---运行mysql命令
+---@param fn fun(val: table|nil, err:nil)
 function mysql:run_mysql_iter(fn, ...)
     return mysql.run_mysql_iter_with_index(self.index, fn, ...)
 end
 
 ---运行mysql根据索引
+---@param fn fun(val: table|nil, err:nil)
 function mysql.run_mysql_iter_with_index(index, fn, ...)
     hc.print("run_mysql_command_with_index args = %o", {index, ...})
     local session = _run_mysql_iter(index, ...)

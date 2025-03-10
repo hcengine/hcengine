@@ -146,12 +146,6 @@ local http=require("socket.http");
 hc.async(function()
     --@param req Request
     hc.bind_http("0.0.0.0:8082", function(req)
-        print("req = =%o", req)
-        hc.print("zzzz %o", getmetatable(req))
-        print("req = =", req:url())
-        print("xxxxxxxx %o", string.format("from lua!!!!!! %s", req:url()))
-        hc.print("req a11= 1111111 =%o", req:header_all())
-        hc.print("xxxxxxxxxxxxxxx1 %o", getmetatable(req))
         local response = Response.new();
         response:set_status_code(201)
         local a = string.format("from lua!!!!!! %s", req:url())
@@ -233,7 +227,7 @@ hc.async(function()
     hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
 
     mysql:run_mysql_iter(function(val, err)
-        hc.print("zzzzzzzzzzzzzzzzz val = %o is_end = %o err = %o", val, err)
+        hc.print("zzzzzzzzzzzzzzzzz val = %o err = %o", val, err)
     end, "select * from engine_account limit 10")
 
     hc.print("end mysql")
