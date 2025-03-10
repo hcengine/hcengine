@@ -10,9 +10,9 @@ use std::{
 
 use mysql_async::{futures::GetConn, prelude::*, Conn, Error, Opts, OptsBuilder, Row, Value};
 
-use algorithm::buf::BinaryMut;
+use algorithm::{buf::{BinaryMut, BtMut}, HashMap};
 use tokio::sync::{
-    mpsc::{channel, Receiver, Sender, UnboundedReceiver},
+    mpsc::{channel, unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
     Notify,
 };
 
@@ -20,7 +20,7 @@ use super::MysqlMsg;
 use crate::{
     core::worker,
     wrapper::{MysqlValue, WrapperLuaMsg},
-    Config, HcMsg, HcNodeState, HcWorkerState, LuaMsg,
+    Config, HcMsg, HcNodeState, HcWorkerState, LuaMsg, MysqlCmd,
 };
 use futures_util::StreamExt;
 
@@ -33,7 +33,7 @@ pub struct MysqlCtl {
     pub client_pool: mysql_async::Pool,
     pub client_num: i32,
 
-    pub subs_sender: Option<Sender<()>>,
+    pub keep_clients: HashMap<u32, UnboundedSender<MysqlMsg>>,
 }
 
 impl MysqlCtl {
@@ -53,7 +53,7 @@ impl MysqlCtl {
             notify: Arc::new(Notify::new()),
             client_pool,
             client_num: 0,
-            subs_sender: None,
+            keep_clients: HashMap::new(),
         }
     }
 
@@ -182,6 +182,46 @@ impl MysqlCtl {
         }
     }
 
+    pub async fn do_keep_info(client: GetConn, mut worker: HcWorkerState, receiver: UnboundedReceiver<MysqlMsg>) {
+        // let (session, service_id) = (msg.session, msg.service_id);
+        // if let Err(e) = Self::inner_do_request(client, msg, &mut worker).await {
+        //     Self::send_err_result(&mut worker, service_id, session, format!("{:?}", e)).await;
+        // }
+    }
+
+    pub fn create_keep(&mut self, msg: MysqlMsg) {
+        let (session, service_id) = (msg.session, msg.service_id);
+        let mut key = 0;
+        for i in 1..u32::MAX  {
+            if !self.keep_clients.contains_key(&i) {
+                key = i;
+                break;
+            }
+        }
+        let (s, r) = unbounded_channel();
+        self.keep_clients.insert(key, s);
+        let c = self.client_pool.get_conn();
+        let worker = self.worker.clone();
+        tokio::spawn(async move {
+            Self::do_keep_info(c, worker, r).await;
+        });
+        // let data = BinaryMut::new();
+        // data.put_u64(key as u64);
+        // let _ = self
+        //     .worker
+        //     .sender
+        //     .send(HcMsg::RespMsg(LuaMsg {
+        //         ty: Config::TY_NUMBER,
+        //         sender: 0,
+        //         receiver: msg.service_id,
+        //         sessionid: msg.session,
+        //         err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
+        //         data,
+        //         ..Default::default()
+        //     }))
+        //     .await;
+    }
+
     pub async fn server(&mut self) {
         loop {
             tokio::select! {
@@ -189,6 +229,17 @@ impl MysqlCtl {
                     println!("mysql !!!!!!!!! receiver = {:?}", val);
                     // 所有的sender均被关掉, 退出
                     if let Some(v) = val {
+                        match &v.cmd {
+                            MysqlCmd::GetKeep => {
+                                self.create_keep(v);
+                                continue;
+                            },
+                            MysqlCmd::RemoveKeep(id) => {
+                                self.keep_clients.remove(id);
+                                continue;
+                            }
+                            _ => {}
+                        }
                         let c = self.client_pool.get_conn();
                         let worker = self.worker.clone();
                         tokio::spawn(async move {

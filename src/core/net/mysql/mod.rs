@@ -7,6 +7,8 @@ use tokio::sync::mpsc::UnboundedSender;
 #[derive(Debug)]
 pub enum MysqlCmd {
     // Insert(String),
+    GetKeep,
+    RemoveKeep(u32),
     Only(String),
     One(String),
     Query(String),
@@ -28,4 +30,13 @@ pub struct MysqlMsg {
 pub struct MysqlSender {
     pub sender: UnboundedSender<MysqlMsg>,
     pub id: u32,
+}
+
+impl MysqlCmd {
+    pub fn is_keep(&self) -> bool {
+        match &self {
+            Self::GetKeep => true,
+            _ => false
+        }
+    }
 }
