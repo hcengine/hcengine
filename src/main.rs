@@ -4,7 +4,6 @@ use hcengine::{parse_env, CoreUtils, HcNode, ServiceConf};
 
 #[tokio::main]
 async fn main() {
-    
     // pub struct LightObject {
     //     ptr: *mut u8,
     //     name: &'static str,
@@ -26,7 +25,7 @@ async fn main() {
     let conf = ServiceConf::bootstrap();
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(10000)).await;
-        let _ = state.sender.send(hcengine::HcMsg::stop(-1)).await;
+        let _ = state.sender.send(hcengine::HcMsg::stop(-1));
     });
     node.new_service(conf).await;
     let _ = node.run().await;

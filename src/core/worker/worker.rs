@@ -8,7 +8,7 @@ use hcnet::{NetConn, NetSender, Settings};
 use log::info;
 use tokio::{
     net::TcpListener,
-    sync::mpsc::{channel, error::SendError, unbounded_channel, Receiver, Sender},
+    sync::mpsc::{channel, error::SendError, unbounded_channel, Receiver, Sender, UnboundedReceiver},
 };
 use webparse::Response;
 use wmhttp::{Body, RecvRequest, RecvResponse};
@@ -17,7 +17,11 @@ use crate::{
     core::{
         msg::{HcNet, HcOper, ListenServer, LuaMsg},
         HcMsg,
-    }, http::{HttpSender, HttpServer}, msg::{ConnectServer, HcHttp, ListenHttpServer}, CommonHandler, Config, HcNodeState, LuaService, MysqlCtl, MysqlMsg, MysqlSender, NetInfo, NetServer, RedisCtl, RedisMsg, RedisSender, ServiceConf, ServiceWrapper, WrapMessage
+    },
+    http::{HttpSender, HttpServer},
+    msg::{ConnectServer, HcHttp, ListenHttpServer},
+    CommonHandler, Config, HcNodeState, LuaService, MysqlCtl, MysqlMsg, MysqlSender, NetInfo,
+    NetServer, RedisCtl, RedisMsg, RedisSender, ServiceConf, ServiceWrapper, WrapMessage,
 };
 
 use super::HcWorkerState;
@@ -25,7 +29,7 @@ use super::HcWorkerState;
 pub struct HcWorker {
     pub nextid: usize,
     pub state: HcWorkerState,
-    pub recv: Receiver<HcMsg>,
+    pub recv: UnboundedReceiver<HcMsg>,
     pub node_state: HcNodeState,
     pub services: HashMap<u32, ServiceWrapper>,
     pub http_servers: HashMap<u16, HttpSender>,
@@ -38,7 +42,7 @@ pub struct HcWorker {
 
 impl HcWorker {
     pub fn new(worker_id: u32, node_state: HcNodeState) -> (Self, HcWorkerState) {
-        let (sender, recv) = channel(usize::MAX >> 3);
+        let (sender, recv) = unbounded_channel();
         let state = HcWorkerState::new(worker_id, sender);
         (
             Self {
@@ -105,7 +109,7 @@ impl HcWorker {
                 HcOper::NewService(conf) => self.new_service(conf).await,
                 HcOper::CloseService(v) => {
                     if v == Config::BOOTSTRAP_ADDR {
-                        let _ = self.node_state.sender.send(HcMsg::stop(0)).await;
+                        let _ = self.node_state.sender.send(HcMsg::stop(0));
                         return Ok(());
                     }
                     if let Some(service) = self.services.remove(&v) {
@@ -191,21 +195,8 @@ impl HcWorker {
         let creator = server.service_id;
         let session = server.session_id;
         println!("creator service_id = {} session = {}", creator, session);
-        let mut data = BinaryMut::new();
-        data.put_u64(id);
-        let _ = self
-            .state
-            .sender
-            .send(HcMsg::RespMsg(LuaMsg {
-                ty: Config::TY_INTEGER,
-                sender: 0,
-                receiver: creator,
-                sessionid: session,
-                err: None,
-                data,
-                ..Default::default()
-            }))
-            .await;
+        
+        self.state.send_integer_msg(id as i64, creator, session);
     }
 
     pub async fn do_connect(&mut self, server: ConnectServer) {
@@ -220,7 +211,7 @@ impl HcWorker {
         match conn {
             Err(e) => {
                 let mut data = BinaryMut::new();
-                data.put_u64(0);
+                data.put_i64(0);
                 let _ = self
                     .state
                     .sender
@@ -232,8 +223,7 @@ impl HcWorker {
                         err: Some(format!("{:?}", e)),
                         data,
                         ..Default::default()
-                    }))
-                    .await;
+                    }));
             }
             Ok(conn) => {
                 let connect_id = conn.get_connection_id();
@@ -259,7 +249,7 @@ impl HcWorker {
                 });
                 println!("creator service_id = {} session = {}", creator, session);
                 let mut data = BinaryMut::new();
-                data.put_u64(connect_id);
+                data.put_i64(connect_id as i64);
                 let _ = self
                     .state
                     .sender
@@ -271,8 +261,7 @@ impl HcWorker {
                         err: None,
                         data,
                         ..Default::default()
-                    }))
-                    .await;
+                    }));
             }
         }
     }
@@ -402,7 +391,7 @@ impl HcWorker {
             Ok(l) => l,
             Err(e) => {
                 let mut data = BinaryMut::new();
-                data.put_u64(0);
+                data.put_i64(0);
                 let _ = self
                     .state
                     .sender
@@ -414,8 +403,7 @@ impl HcWorker {
                         err: Some(format!("{:?}", e)),
                         data,
                         ..Default::default()
-                    }))
-                    .await;
+                    }));
                 return;
             }
         };
@@ -429,7 +417,7 @@ impl HcWorker {
         }
         if http_id == 0 {
             let mut data = BinaryMut::new();
-            data.put_u64(0);
+            data.put_i64(0);
             let _ = self
                 .state
                 .sender
@@ -441,8 +429,7 @@ impl HcWorker {
                     err: Some(format!("{:?}", "too many http server")),
                     data,
                     ..Default::default()
-                }))
-                .await;
+                }));
             return;
         }
         let (sender, receiver) = HttpSender::new(10, 1);
@@ -461,7 +448,7 @@ impl HcWorker {
         let session = server.session_id;
         // println!("creator service_id = {} session = {}", creator, session);
         let mut data = BinaryMut::new();
-        data.put_u64(http_id as u64);
+        data.put_i64(http_id as i64);
         let _ = self
             .state
             .sender
@@ -473,8 +460,7 @@ impl HcWorker {
                 err: None,
                 data,
                 ..Default::default()
-            }))
-            .await;
+            }));
     }
 
     pub async fn new_service(&mut self, conf: ServiceConf) {
@@ -483,20 +469,16 @@ impl HcWorker {
         let session = conf.session;
         if let Some(_) = self.node_state.query_service(&conf.name) {
             let mut data = BinaryMut::new();
-            data.put_u64(0 as u64);
-            let _ = self
-                .node_state
-                .sender
-                .send(HcMsg::RespMsg(LuaMsg {
-                    ty: Config::TY_INTEGER,
-                    sender: 0,
-                    receiver: creator,
-                    sessionid: session,
-                    err: Some(format!("存在相同的服务{}", conf.name)),
-                    data,
-                    ..Default::default()
-                }))
-                .await;
+            data.put_i64(0 as i64);
+            let _ = self.node_state.sender.send(HcMsg::RespMsg(LuaMsg {
+                ty: Config::TY_INTEGER,
+                sender: 0,
+                receiver: creator,
+                sessionid: session,
+                err: Some(format!("存在相同的服务{}", conf.name)),
+                data,
+                ..Default::default()
+            }));
             return;
         }
         let mut counter = 0;
@@ -516,20 +498,16 @@ impl HcWorker {
         if service_id == 0 {
             if session != 0 {
                 let mut data = BinaryMut::new();
-                data.put_u64(service_id as u64);
-                let _ = self
-                    .node_state
-                    .sender
-                    .send(HcMsg::RespMsg(LuaMsg {
-                        ty: Config::TY_INTEGER,
-                        sender: 0,
-                        receiver: creator,
-                        sessionid: session,
-                        err: None,
-                        data,
-                        ..Default::default()
-                    }))
-                    .await;
+                data.put_i64(service_id as i64);
+                let _ = self.node_state.sender.send(HcMsg::RespMsg(LuaMsg {
+                    ty: Config::TY_INTEGER,
+                    sender: 0,
+                    receiver: creator,
+                    sessionid: session,
+                    err: None,
+                    data,
+                    ..Default::default()
+                }));
             }
         } else {
             let mut s = LuaService::new(self.node_state.clone(), self.state.clone(), conf);
@@ -539,11 +517,7 @@ impl HcWorker {
             unsafe {
                 if !(*service).init() {
                     if service_id == Config::BOOTSTRAP_ADDR {
-                        let _ = self
-                            .node_state
-                            .sender
-                            .send(HcMsg::oper(HcOper::Stop(-1)))
-                            .await;
+                        let _ = self.node_state.sender.send(HcMsg::oper(HcOper::Stop(-1)));
                     }
                     return;
                 }
@@ -552,21 +526,17 @@ impl HcWorker {
             }
             self.state.add_count();
             let mut data = BinaryMut::new();
-            data.put_u64(service_id as u64);
+            data.put_i64(service_id as i64);
             if session != 0 {
-                let _ = self
-                    .node_state
-                    .sender
-                    .send(HcMsg::RespMsg(LuaMsg {
-                        ty: Config::TY_INTEGER,
-                        sender: 0,
-                        receiver: creator,
-                        sessionid: session,
-                        err: None,
-                        data,
-                        ..Default::default()
-                    }))
-                    .await;
+                let _ = self.node_state.sender.send(HcMsg::RespMsg(LuaMsg {
+                    ty: Config::TY_INTEGER,
+                    sender: 0,
+                    receiver: creator,
+                    sessionid: session,
+                    err: None,
+                    data,
+                    ..Default::default()
+                }));
             }
             println!("init!!!!!!!!!!!");
         }
@@ -612,22 +582,17 @@ impl HcWorker {
             tokio::spawn(async move {
                 ctl.server().await;
             });
-
         } else {
             let data = BinaryMut::new();
-            let _ = self
-                .node_state
-                .sender
-                .send(HcMsg::RespMsg(LuaMsg {
-                    ty: Config::TY_ERROR,
-                    sender: 0,
-                    receiver: msg.service_id,
-                    sessionid: msg.session,
-                    err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
-                    data,
-                    ..Default::default()
-                }))
-                .await;
+            let _ = self.node_state.sender.send(HcMsg::RespMsg(LuaMsg {
+                ty: Config::TY_ERROR,
+                sender: 0,
+                receiver: msg.service_id,
+                sessionid: msg.session,
+                err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
+                data,
+                ..Default::default()
+            }));
         }
     }
 
@@ -646,7 +611,6 @@ impl HcWorker {
         }
     }
 
-    
     async fn start_mysql_connect(&mut self, msg: MysqlMsg) {
         if let Some(v) = self.node_state.get_mysql_url(&msg.url_id) {
             let (tx, rx) = unbounded_channel();
@@ -660,22 +624,17 @@ impl HcWorker {
             tokio::spawn(async move {
                 ctl.server().await;
             });
-
         } else {
             let data = BinaryMut::new();
-            let _ = self
-                .node_state
-                .sender
-                .send(HcMsg::RespMsg(LuaMsg {
-                    ty: Config::TY_ERROR,
-                    sender: 0,
-                    receiver: msg.service_id,
-                    sessionid: msg.session,
-                    err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
-                    data,
-                    ..Default::default()
-                }))
-                .await;
+            let _ = self.node_state.sender.send(HcMsg::RespMsg(LuaMsg {
+                ty: Config::TY_ERROR,
+                sender: 0,
+                receiver: msg.service_id,
+                sessionid: msg.session,
+                err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
+                data,
+                ..Default::default()
+            }));
         }
     }
 

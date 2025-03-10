@@ -347,7 +347,7 @@ hc.register_protocol({
     pack = function(val)
         local msg = LuaMsg.new()
         msg.ty = hc.TY_INTEGER
-        msg:write_u64(val)
+        msg:write_i64(val)
         return msg
     end,
     --- @param msg LuaMsg

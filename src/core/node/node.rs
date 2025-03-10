@@ -4,12 +4,13 @@ use std::time::Instant;
 use std::u64;
 use std::{i32, io, time::Duration, usize};
 use tokio::runtime::Runtime;
-use tokio::sync::mpsc::{channel, Receiver};
+use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedReceiver};
 
 use crate::core::msg::HcOper;
 use crate::core::worker;
 use crate::{
-    Config, ConfigOption, CoreUtils, HcMsg, HcStatusState, HcWorker, HcWorkerState, LuaMsg, ServiceConf, TimerNode
+    Config, ConfigOption, CoreUtils, HcMsg, HcStatusState, HcWorker, HcWorkerState, LuaMsg,
+    ServiceConf, TimerNode,
 };
 
 use super::{node_state, HcNodeState};
@@ -21,7 +22,7 @@ pub struct HcNode {
     // 时轮定时器, 因为游戏内都基本上是短时间内的定时器
     timer: TimerWheel<TimerNode>,
     // timer: TimerRBTree<TimerNode>,
-    recv: Receiver<HcMsg>,
+    recv: UnboundedReceiver<HcMsg>,
 
     status: HcStatusState,
     exitcode: i32,
@@ -32,7 +33,7 @@ impl HcNode {
         let mut senders = vec![];
         let mut runtimes = vec![];
         let worker_num = config.worker_num;
-        let (send, recv) = channel(usize::MAX >> 3);
+        let (send, recv) = unbounded_channel();
         let node_state = HcNodeState::new(config, send);
         for i in 0..worker_num.max(1) {
             let (work, sender) = HcWorker::new(i as u32, node_state.clone());
@@ -147,7 +148,7 @@ impl HcNode {
                     }
 
                     let sender = &mut self.senders[woker_id];
-                    let _ = sender.sender.send(HcMsg::oper(oper)).await;
+                    let _ = sender.sender.send(HcMsg::oper(oper));
                 }
                 HcOper::AddTimer(timer_id, node) => {
                     self.timer.add_timer_by_id(timer_id, node);
@@ -189,14 +190,14 @@ impl HcNode {
     pub async fn call_msg(&mut self, msg: LuaMsg) {
         let worker_id = Config::get_workid(msg.receiver);
         if let Some(worker) = self.get_worker(worker_id) {
-            let _ = worker.sender.send(HcMsg::CallMsg(msg)).await;
+            let _ = worker.sender.send(HcMsg::CallMsg(msg));
         }
     }
 
     pub async fn resp_msg(&mut self, msg: LuaMsg) {
         let worker_id = Config::get_workid(msg.receiver);
         if let Some(worker) = self.get_worker(worker_id) {
-            let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
+            let _ = worker.sender.send(HcMsg::RespMsg(msg));
         }
     }
 
@@ -206,10 +207,7 @@ impl HcNode {
         } else {
             self.next_worker()
         };
-        let _ = worker
-            .sender
-            .send(HcMsg::oper(HcOper::NewService(conf)))
-            .await;
+        let _ = worker.sender.send(HcMsg::oper(HcOper::NewService(conf)));
     }
 
     pub fn get_worker(&mut self, threadid: usize) -> Option<&mut HcWorkerState> {
@@ -242,18 +240,15 @@ impl HcNode {
                         let mut data = BinaryMut::new();
                         data.put_u64(timer_id);
                         data.put_bool(is_repeat);
-                        let _ = worker
-                            .sender
-                            .send(HcMsg::RespMsg(LuaMsg {
-                                ty: Config::TY_TIMER,
-                                sender: 0,
-                                receiver: service_id,
-                                err: None,
-                                sessionid: 0,
-                                data,
-                                .. Default::default()
-                            }))
-                            .await;
+                        let _ = worker.sender.send(HcMsg::RespMsg(LuaMsg {
+                            ty: Config::TY_TIMER,
+                            sender: 0,
+                            receiver: service_id,
+                            err: None,
+                            sessionid: 0,
+                            data,
+                            ..Default::default()
+                        }));
                     }
                 }
                 _ => unreachable!(),

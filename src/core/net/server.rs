@@ -40,16 +40,12 @@ impl Handler for NetServer {
         let worker = self.worker.clone();
         let (mut sender, receiver) = NetSender::new(10, 1);
         sender.set_connection_id(conn.get_connection_id());
-        let _ = self
-            .worker
-            .sender
-            .send(HcMsg::net_accept(NetInfo::new(
-                sender.clone(),
-                self.id,
-                self.service_id,
-                conn.remote_addr(),
-            )))
-            .await;
+        let _ = self.worker.sender.send(HcMsg::net_accept(NetInfo::new(
+            sender.clone(),
+            self.id,
+            self.service_id,
+            conn.remote_addr(),
+        )));
         let handler = CommonHandler {
             sender,
             connect_id,

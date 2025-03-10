@@ -1,5 +1,5 @@
 use algorithm::buf::BinaryMut;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Sender, UnboundedSender};
 use wmhttp::{Client, ClientOption, ProtError, ProtResult, RecvRequest, RecvResponse};
 
 use crate::{wrapper::WrapperLuaMsg, Config, HcMsg, HcWorkerState, LuaMsg};
@@ -11,7 +11,7 @@ pub struct HttpClient {
 
 impl HttpClient {
     pub async fn do_request(
-        sender: Sender<HcMsg>,
+        sender: UnboundedSender<HcMsg>,
         service_id: u32,
         session: i64,
         req: RecvRequest,
@@ -30,11 +30,8 @@ impl HttpClient {
                     ..Default::default()
                 };
                 msg.obj = Some(WrapperLuaMsg::response(res));
-                let _ = sender.send(HcMsg::RespMsg(msg)).await;
+                let _ = sender.send(HcMsg::RespMsg(msg));
                 
-                // let _ = sender
-                //     .send(HcMsg::http_return(service_id, session, Some(res), None))
-                //     .await;
             }
             Err(e) => {
                 let data = BinaryMut::new();
@@ -47,7 +44,7 @@ impl HttpClient {
                     data,
                     ..Default::default()
                 };
-                let _ = sender.send(HcMsg::RespMsg(msg)).await;
+                let _ = sender.send(HcMsg::RespMsg(msg));
 
                 // let _ = sender
                 //     .send(HcMsg::http_return(

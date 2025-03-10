@@ -1,11 +1,19 @@
 use std::{sync::mpsc::channel, time::Duration};
 
-use hclua::{lua_State, values::WrapperObject, Lua, LuaPush, LuaRead, LuaTable, WrapObject, WrapSerde};
+use hclua::{
+    lua_State, values::WrapperObject, Lua, LuaPush, LuaRead, LuaTable, WrapObject, WrapSerde,
+};
 use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    http::{HttpClient, HttpServer}, wrapper::{RedisWrapperBatchCmd, RedisWrapperCmd, WrapperClientOption, WrapperRedisValue, WrapperRequest, WrapperResponse}, Config, CoreUtils, HcMsg, LuaMsg, LuaService, MysqlCmd, RedisCmd, ServiceConf, ServiceWrapper, TimerConf
+    http::{HttpClient, HttpServer},
+    wrapper::{
+        RedisWrapperBatchCmd, RedisWrapperCmd, WrapperClientOption, WrapperRedisValue,
+        WrapperRequest, WrapperResponse,
+    },
+    Config, CoreUtils, HcMsg, LuaMsg, LuaService, MysqlCmd, RedisCmd, ServiceConf, ServiceWrapper,
+    TimerConf,
 };
 
 use super::WrapMessage;
@@ -127,9 +135,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 msg.sessionid = session;
                 let sender = (*service).node.sender.clone();
                 let msg = Box::from_raw(msg);
-                tokio::spawn(async move {
-                    let _ = sender.send(crate::HcMsg::CallMsg(*msg)).await;
-                });
+                let _ = sender.send(crate::HcMsg::CallMsg(*msg));
                 session
             }),
         );
@@ -139,9 +145,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             hclua::function1(move |msg: &mut LuaMsg| {
                 let sender = (*service).node.sender.clone();
                 let msg = Box::from_raw(msg);
-                tokio::spawn(async move {
-                    let _ = sender.send(crate::HcMsg::RespMsg(*msg)).await;
-                });
+                let _ = sender.send(crate::HcMsg::RespMsg(*msg));
             }),
         );
 
@@ -160,9 +164,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                     TimerConf::new(inteval, (*service).get_id(), is_repeat),
                 );
                 let sender = (*service).node.sender.clone();
-                tokio::spawn(async move {
-                    let _ = sender.send(msg).await;
-                });
+                let _ = sender.send(msg);
                 next
             }),
         );
@@ -175,7 +177,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
 
                 let sender = (*service).node.sender.clone();
                 tokio::spawn(async move {
-                    let _ = sender.send(msg).await;
+                    let _ = sender.send(msg);
                 });
             }),
         );
@@ -197,11 +199,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                     let id = (*service).get_id();
                     let sender = (*service).worker.sender.clone();
                     let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
-                    tokio::spawn(async move {
-                        let _ = sender
-                            .send(HcMsg::net_listen(id, session, method, url, settings))
-                            .await;
-                    });
+                    let _ = sender.send(HcMsg::net_listen(id, session, method, url, settings));
                     session
                 },
             ),
@@ -216,11 +214,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                     let id = (*service).get_id();
                     let sender = (*service).worker.sender.clone();
                     let settings = settings.map(|w| w.value).unwrap_or(Settings::default());
-                    tokio::spawn(async move {
-                        let _ = sender
-                            .send(HcMsg::net_connect(id, session, method, url, settings))
-                            .await;
-                    });
+                    let _ = sender.send(HcMsg::net_connect(id, session, method, url, settings));
                     session
                 },
             ),
@@ -231,15 +225,11 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
-                tokio::spawn(async move {
-                    let _ = sender
-                        .send(HcMsg::net_close(
-                            id,
-                            service_id,
-                            reason.unwrap_or(String::new()),
-                        ))
-                        .await;
-                });
+                let _ = sender.send(HcMsg::net_close(
+                    id,
+                    service_id,
+                    reason.unwrap_or(String::new()),
+                ));
                 session
             }),
         );
@@ -252,9 +242,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
-                tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::send_msg(id, service_id, *msg)).await;
-                });
+                let _ = sender.send(HcMsg::send_msg(id, service_id, *msg));
                 session
             }),
         );
@@ -265,9 +253,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let session = (*service).node.next_seq();
                 let id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
-                tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::http_listen(id, session, addr)).await;
-                });
+                let _ = sender.send(HcMsg::http_listen(id, session, addr));
                 session
 
                 // tokio::spawn(async move {
@@ -277,15 +263,12 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             }),
         );
 
-        
         table.set(
             "send_response",
             hclua::function2(move |id: u64, res: WrapperObject<WrapperResponse>| -> i64 {
                 let session = (*service).node.next_seq();
                 let sender = (*service).worker.sender.clone();
-                tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::http_outcoming(id, res.0.r)).await;
-                });
+                let _ = sender.send(HcMsg::http_outcoming(id, res.0.r));
                 session
 
                 // tokio::spawn(async move {
@@ -294,20 +277,31 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 // id
             }),
         );
-        
+
         table.set(
             "http_request",
-            hclua::function2(move |req: WrapperObject<WrapperRequest>, option: Option<WrapperObject<WrapperClientOption>>| -> i64 {
-                let session = (*service).node.next_seq();
-                let service_id = (*service).get_id();
-                let sender = (*service).worker.sender.clone();
-                tokio::spawn(async move {
-                    let _ = HttpClient::do_request(sender, service_id, session, req.0.r, option.map(|v| v.0.client)).await;
-                });
-                session
-            }),
+            hclua::function2(
+                move |req: WrapperObject<WrapperRequest>,
+                      option: Option<WrapperObject<WrapperClientOption>>|
+                      -> i64 {
+                    let session = (*service).node.next_seq();
+                    let service_id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    tokio::spawn(async move {
+                        let _ = HttpClient::do_request(
+                            sender,
+                            service_id,
+                            session,
+                            req.0.r,
+                            option.map(|v| v.0.client),
+                        )
+                        .await;
+                    });
+                    session
+                },
+            ),
         );
-        
+
         table.set(
             "set_redis_url",
             hclua::function1(move |redis_url: String| -> u32 {
@@ -327,13 +321,11 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 let cmd = RedisCmd::One(cmd.0);
-                tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd)).await;
-                });
+                let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd));
                 session
             }),
         );
-        
+
         table.set(
             "run_redis_batch_command",
             hclua::function2(move |url_id: u32, cmd: RedisWrapperBatchCmd| -> i64 {
@@ -341,19 +333,18 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 let cmd = RedisCmd::Batch(cmd.0);
-                tokio::spawn(async move {
-                    let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd)).await;
-                });
+                let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd));
                 session
             }),
         );
 
-        
         table.set(
             "set_mysql_url",
-            hclua::function1(move |mysql_url: String| -> Result<u32, mysql_async::Error> {
-                (*service).node.set_mysql_url(mysql_url)
-            }),
+            hclua::function1(
+                move |mysql_url: String| -> Result<u32, mysql_async::Error> {
+                    (*service).node.set_mysql_url(mysql_url)
+                },
+            ),
         );
 
         macro_rules! run_mysql {
@@ -365,9 +356,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                         let service_id = (*service).get_id();
                         let sender = (*service).worker.sender.clone();
                         let cmd = $name(sql);
-                        tokio::spawn(async move {
-                            let _ = sender.send(HcMsg::mysql_msg(url_id, service_id, session, cmd)).await;
-                        });
+                        let _ = sender.send(HcMsg::mysql_msg(url_id, service_id, session, cmd));
                         session
                     }),
                 );
@@ -381,7 +370,6 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         run_mysql!("run_mysql_insert", MysqlCmd::Insert);
         run_mysql!("run_mysql_update", MysqlCmd::Update);
         run_mysql!("run_mysql_ignore", MysqlCmd::Ignore);
-
 
         // table.set(
         //     "delay",

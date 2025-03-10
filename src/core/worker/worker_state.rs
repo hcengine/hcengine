@@ -6,9 +6,10 @@ use std::{
     },
 };
 
-use tokio::sync::mpsc::Sender;
+use algorithm::buf::{BinaryMut, BtMut};
+use tokio::sync::mpsc::{Sender, UnboundedSender};
 
-use crate::{Config, HcMsg};
+use crate::{Config, HcMsg, LuaMsg};
 
 #[derive(Clone)]
 pub struct HcWorkerState {
@@ -16,11 +17,11 @@ pub struct HcWorkerState {
     shared: Arc<AtomicBool>,
     count: Arc<AtomicUsize>,
     next: Arc<AtomicU32>,
-    pub sender: Sender<HcMsg>,
+    pub sender: UnboundedSender<HcMsg>,
 }
 
 impl HcWorkerState {
-    pub fn new(worker_id: u32, sender: Sender<HcMsg>) -> Self {
+    pub fn new(worker_id: u32, sender: UnboundedSender<HcMsg>) -> Self {
         Self {
             worker_id,
             shared: Arc::new(AtomicBool::new(true)),
@@ -65,5 +66,17 @@ impl HcWorkerState {
 
     pub async fn wait(&mut self) -> io::Result<()> {
         Ok(())
+    }
+
+    pub fn send_integer_msg(&self, val: i64, service_id: u32, session: i64) {
+        let mut data = BinaryMut::new();
+        data.put_i64(val);
+        let _ = self.sender.send(HcMsg::RespMsg(LuaMsg {
+            ty: Config::TY_NUMBER,
+            receiver: service_id,
+            sessionid: session,
+            data,
+            ..Default::default()
+        }));
     }
 }

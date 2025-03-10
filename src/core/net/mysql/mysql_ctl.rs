@@ -74,7 +74,7 @@ impl MysqlCtl {
             data,
             ..Default::default()
         };
-        let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
+        let _ = worker.sender.send(HcMsg::RespMsg(msg));
     }
 
     pub async fn send_mysql_value(
@@ -94,7 +94,7 @@ impl MysqlCtl {
             ..Default::default()
         };
         msg.obj = Some(WrapperLuaMsg::mysql(value));
-        let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
+        let _ = worker.sender.send(HcMsg::RespMsg(msg));
         // worker.sender.send()
     }
 
@@ -190,7 +190,6 @@ impl MysqlCtl {
     }
 
     pub fn create_keep(&mut self, msg: MysqlMsg) {
-        let (session, service_id) = (msg.session, msg.service_id);
         let mut key = 0;
         for i in 1..u32::MAX  {
             if !self.keep_clients.contains_key(&i) {
@@ -205,21 +204,7 @@ impl MysqlCtl {
         tokio::spawn(async move {
             Self::do_keep_info(c, worker, r).await;
         });
-        // let data = BinaryMut::new();
-        // data.put_u64(key as u64);
-        // let _ = self
-        //     .worker
-        //     .sender
-        //     .send(HcMsg::RespMsg(LuaMsg {
-        //         ty: Config::TY_NUMBER,
-        //         sender: 0,
-        //         receiver: msg.service_id,
-        //         sessionid: msg.session,
-        //         err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
-        //         data,
-        //         ..Default::default()
-        //     }))
-        //     .await;
+        self.worker.send_integer_msg(key as i64, msg.service_id, msg.session);
     }
 
     pub async fn server(&mut self) {

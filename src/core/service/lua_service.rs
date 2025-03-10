@@ -5,8 +5,10 @@ use hcnet::NetConn;
 use wmhttp::{RecvRequest, RecvResponse};
 
 use crate::{
-    core::msg::HcOper, luareg_engine_core, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject,
-    WrapMessage, wrapper::{WrapperRequest, WrapperResponse},
+    core::msg::HcOper,
+    luareg_engine_core,
+    wrapper::{WrapperRequest, WrapperResponse},
+    HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage,
 };
 
 use super::ServiceConf;
@@ -112,27 +114,21 @@ impl LuaService {
     pub fn exit(&mut self, exitcode: i32) {
         let sender = self.node.sender.clone();
         tokio::spawn(async move {
-            let _ = sender
-                .send(crate::HcMsg::oper(HcOper::Stop(exitcode)))
-                .await;
+            let _ = sender.send(crate::HcMsg::oper(HcOper::Stop(exitcode)));
         });
     }
 
     pub fn close(&mut self, service_id: u32) {
         let sender = self.node.sender.clone();
         tokio::spawn(async move {
-            let _ = sender
-                .send(crate::HcMsg::oper(HcOper::CloseService(service_id)))
-                .await;
+            let _ = sender.send(crate::HcMsg::oper(HcOper::CloseService(service_id)));
         });
     }
 
     pub fn new_service(&mut self, conf: ServiceConf) {
         let sender = self.node.sender.clone();
         tokio::spawn(async move {
-            let _ = sender
-                .send(crate::HcMsg::oper(HcOper::NewService(conf)))
-                .await;
+            let _ = sender.send(crate::HcMsg::oper(HcOper::NewService(conf)));
         });
     }
 

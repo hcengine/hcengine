@@ -52,8 +52,7 @@ impl HttpTrait for Operate {
                 self.service_id,
                 self.get_http_id(),
                 req,
-            ))
-            .await;
+            ));
         match self.recv.recv().await {
             Some(v) => {
                 return Ok(v);

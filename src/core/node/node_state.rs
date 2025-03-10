@@ -5,7 +5,7 @@ use std::{sync::{
 
 use algorithm::HashMap;
 use mysql_async::Opts;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Sender, UnboundedSender};
 
 use crate::{ConfigOption, HcMsg};
 
@@ -14,14 +14,14 @@ pub struct HcNodeState {
     next: Arc<AtomicU32>,
     unique: Arc<AtomicI64>,
     pub config: Arc<ConfigOption>,
-    pub sender: Sender<HcMsg>,
+    pub sender: UnboundedSender<HcMsg>,
     pub service_map: Arc<RwLock<HashMap<String, u32>>>,
     pub redis_url_map: Arc<RwLock<HashMap<u32, String>>>,
     pub mysql_url_map: Arc<RwLock<HashMap<u32, String>>>,
 }
 
 impl HcNodeState {
-    pub fn new(config: ConfigOption, sender: Sender<HcMsg>) -> Self {
+    pub fn new(config: ConfigOption, sender: UnboundedSender<HcMsg>) -> Self {
         Self {
             config: Arc::new(config),
             next: Arc::new(AtomicU32::new(1)),

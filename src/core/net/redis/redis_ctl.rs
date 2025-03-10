@@ -81,7 +81,7 @@ impl RedisCtl {
             data,
             ..Default::default()
         };
-        let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
+        let _ = worker.sender.send(HcMsg::RespMsg(msg));
     }
 
     pub async fn do_request(
@@ -116,7 +116,7 @@ impl RedisCtl {
                 };
                 msg.obj = Some(WrapperLuaMsg::redis(v));
 
-                let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
+                let _ = worker.sender.send(HcMsg::RespMsg(msg));
                 let _ = client_sd.send(Some(client)).await;
             }
             Err(e) => {
@@ -158,7 +158,7 @@ impl RedisCtl {
                             ..Default::default()
                         };
                         msg.obj = Some(WrapperLuaMsg::redis(v));
-                        let _ = worker.sender.send(HcMsg::RespMsg(msg)).await;
+                        let _ = worker.sender.send(HcMsg::RespMsg(msg));
                     } else {
                         println!("eeeeeeeeeeeeeeeeeeee ======================");
                         return Ok(())
