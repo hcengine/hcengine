@@ -2,6 +2,7 @@ use redis::Cmd;
 use tokio::sync::mpsc::UnboundedSender;
 
 mod redis_ctl;
+mod pool;
 
 pub use redis_ctl::RedisCtl;
 

@@ -195,6 +195,17 @@ impl HcMsg {
     pub fn mysql_msg(url_id: u32, service_id: u32, session: i64, cmd: MysqlCmd) -> Self {
         HcMsg::Mysql(MysqlMsg {
             url_id,
+            keep: 0,
+            cmd,
+            service_id,
+            session,
+        })
+    }
+    
+    pub fn mysql_keep_msg(url_id: u32, keep: u16, service_id: u32, session: i64, cmd: MysqlCmd) -> Self {
+        HcMsg::Mysql(MysqlMsg {
+            url_id,
+            keep,
             cmd,
             service_id,
             session,

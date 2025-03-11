@@ -625,13 +625,14 @@ impl HcWorker {
                 ctl.server().await;
             });
         } else {
+            println!("mysql error ================= {} {} {}", msg.url_id, msg.service_id, msg.session);
             let data = BinaryMut::new();
-            let _ = self.node_state.sender.send(HcMsg::RespMsg(LuaMsg {
+            let _ = self.state.sender.send(HcMsg::RespMsg(LuaMsg {
                 ty: Config::TY_ERROR,
                 sender: 0,
                 receiver: msg.service_id,
                 sessionid: msg.session,
-                err: Some(format!("不存在该id:{}的映射redis地址", msg.url_id)),
+                err: Some(format!("不存在该id:{}的映射mysql地址", msg.url_id)),
                 data,
                 ..Default::default()
             }));

@@ -72,7 +72,7 @@ impl HcWorkerState {
         let mut data = BinaryMut::new();
         data.put_i64(val);
         let _ = self.sender.send(HcMsg::RespMsg(LuaMsg {
-            ty: Config::TY_NUMBER,
+            ty: Config::TY_INTEGER,
             receiver: service_id,
             sessionid: session,
             data,

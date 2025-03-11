@@ -347,16 +347,44 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             ),
         );
 
+        table.set(
+            "get_mysql_keep",
+            hclua::function1(
+                move |url_id: u32| -> i64 {
+                    let session = (*service).node.next_seq();
+                    let service_id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    let cmd = MysqlCmd::GetKeep;
+                    let _ = sender.send(HcMsg::mysql_keep_msg(url_id, 0, service_id, session, cmd));
+                    session
+                },
+            ),
+        );
+
+        table.set(
+            "del_mysql_keep",
+            hclua::function2(
+                move |url_id: u32, keep: u16| -> i64 {
+                    let session = (*service).node.next_seq();
+                    let service_id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    let cmd = MysqlCmd::RemoveKeep(keep);
+                    let _ = sender.send(HcMsg::mysql_keep_msg(url_id, 0, service_id, session, cmd));
+                    session
+                },
+            ),
+        );
+
         macro_rules! run_mysql {
             ($expr: expr, $name: expr) => {
                 table.set(
                     $expr,
-                    hclua::function2(move |url_id: u32, sql: String| -> i64 {
+                    hclua::function3(move |url_id: u32, keep: u16, sql: String| -> i64 {
                         let session = (*service).node.next_seq();
                         let service_id = (*service).get_id();
                         let sender = (*service).worker.sender.clone();
                         let cmd = $name(sql);
-                        let _ = sender.send(HcMsg::mysql_msg(url_id, service_id, session, cmd));
+                        let _ = sender.send(HcMsg::mysql_keep_msg(url_id, keep, service_id, session, cmd));
                         session
                     }),
                 );

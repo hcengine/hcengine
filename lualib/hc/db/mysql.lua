@@ -7,13 +7,17 @@ local _run_mysql_iter = core.run_mysql_iter
 local _run_mysql_insert = core.run_mysql_insert
 local _run_mysql_update = core.run_mysql_update
 local _run_mysql_ignore = core.run_mysql_ignore
+local _get_mysql_keep = core.get_mysql_keep
+local _del_mysql_keep = core.del_mysql_keep
 
 ---@class hc : core
 local hc = require("hc.core")
 
+---@class mysql
 local mysql = {}
 
 mysql.index = 0
+mysql.keep = 0
 
 ---设置默认mysql的索引
 ---@param index integer
@@ -30,49 +34,25 @@ end
 
 ---运行mysql命令
 function mysql:run_mysql_only(...)
-    return mysql.run_mysql_only_with_index(self.index, ...)
-end
-
----运行mysql根据索引
-function mysql.run_mysql_only_with_index(index, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    return hc.wait(_run_mysql_only(index, ...))
+    hc.print("index = %o", self.index)
+    return hc.wait(_run_mysql_only(self.index, self.keep, ...))
 end
 
 ---运行mysql命令
 function mysql:run_mysql_one(...)
-    return mysql.run_mysql_one_with_index(self.index, ...)
+    return hc.wait(_run_mysql_one(self.index, self.keep, ...))
 end
-
----运行mysql根据索引
-function mysql.run_mysql_one_with_index(index, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    return hc.wait(_run_mysql_one(index, ...))
-end
-
 
 ---运行mysql命令
 function mysql:run_mysql_query(...)
-    return mysql.run_mysql_query_with_index(self.index, ...)
-end
-
----运行mysql根据索引
-function mysql.run_mysql_query_with_index(index, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    return hc.wait(_run_mysql_query(index, ...))
+    return hc.wait(_run_mysql_query(self.index, self.keep, ...))
 end
 
 ---运行mysql命令
 ---@param fn fun(val: table|nil, err:nil)
 function mysql:run_mysql_iter(fn, ...)
-    return mysql.run_mysql_iter_with_index(self.index, fn, ...)
-end
-
----运行mysql根据索引
----@param fn fun(val: table|nil, err:nil)
-function mysql.run_mysql_iter_with_index(index, fn, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    local session = _run_mysql_iter(index, ...)
+    hc.print("run_mysql_command_with_index args = %o", { self.index, self.keep, ... })
+    local session = _run_mysql_iter(self.index, self.keep, ...)
     local cols = nil
     local col_len = 0
     while true do
@@ -86,7 +66,7 @@ function mysql.run_mysql_iter_with_index(index, fn, ...)
             col_len = #cols
         else
             local ret_table = {}
-            for i = 1,col_len do
+            for i = 1, col_len do
                 ret_table[cols[i]] = ret[i]
             end
             fn(ret_table, err)
@@ -96,35 +76,33 @@ end
 
 ---运行mysql命令
 function mysql:run_mysql_insert(...)
-    return mysql.run_mysql_insert_with_index(self.index, ...)
-end
-
----运行mysql根据索引
-function mysql.run_mysql_insert_with_index(index, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    return hc.wait(_run_mysql_insert(index, ...))
+    return hc.wait(_run_mysql_insert(self.index, self.keep, ...))
 end
 
 ---运行mysql命令
 function mysql:run_mysql_update(...)
-    return mysql.run_mysql_update_with_index(self.index, ...)
-end
-
----运行mysql根据索引
-function mysql.run_mysql_update_with_index(index, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    return hc.wait(_run_mysql_update(index, ...))
+    return hc.wait(_run_mysql_update(self.index, self.keep, ...))
 end
 
 ---运行mysql命令
 function mysql:run_mysql_ignore(...)
-    return mysql.run_mysql_ignore_with_index(self.index, ...)
+    return hc.wait(_run_mysql_ignore(self.index, self.keep, ...))
 end
 
----运行mysql根据索引
-function mysql.run_mysql_ignore_with_index(index, ...)
-    hc.print("run_mysql_command_with_index args = %o", {index, ...})
-    return hc.wait(_run_mysql_ignore(index, ...))
+---运行mysql命令
+function mysql:get_mysql_keep()
+    return hc.wait(_get_mysql_keep(self.index))
+end
+
+---运行mysql命令
+function mysql:del_mysql_keep()
+    return _del_mysql_keep(self.index, self.keep)
+end
+
+---@return mysql
+function mysql:build_connect(table)
+    setmetatable(table, { __index = self })
+    return table
 end
 
 return mysql
