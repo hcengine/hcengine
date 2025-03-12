@@ -8,7 +8,7 @@ use tokio::sync::mpsc::UnboundedSender;
 pub enum MysqlCmd {
     // Insert(String),
     GetKeep,
-    RemoveKeep(u16),
+    DelKeep(u16),
     Only(String),
     One(String),
     Query(String),

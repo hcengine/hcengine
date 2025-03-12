@@ -7,6 +7,8 @@ mod pool;
 pub use redis_ctl::RedisCtl;
 
 pub enum RedisCmd {
+    GetKeep,
+    DelKeep(u16),
     One(Cmd),
     Batch(Vec<Cmd>),
 }
@@ -15,7 +17,7 @@ impl RedisCmd {
     pub fn is_no_response(&self) -> bool {
         match self {
             RedisCmd::One(cmd) => cmd.is_no_response(),
-            RedisCmd::Batch(_) => false,
+            _ => false,
         }
     }
 
@@ -25,7 +27,7 @@ impl RedisCmd {
                 redis::Arg::Simple(arg) => String::from_utf8_lossy(arg).to_string(),
                 redis::Arg::Cursor => String::new(),
             }).collect(),
-            RedisCmd::Batch(_) => vec![],
+            _ => vec![],
         };
         result
     }
@@ -34,6 +36,7 @@ impl RedisCmd {
 pub struct RedisMsg {
     pub url_id: u32,
     pub cmd: RedisCmd,
+    pub keep: u16,
     pub session: i64,
     pub service_id: u32,
 }

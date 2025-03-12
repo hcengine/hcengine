@@ -1,5 +1,5 @@
 use std::{
-    collections::LinkedList,
+    collections::{HashMap, LinkedList},
     io,
     ops::Not,
     sync::{
@@ -16,7 +16,7 @@ use redis::{
     Client, Msg, PushKind, RedisError, RedisResult, Value,
 };
 use tokio::sync::{
-    mpsc::{channel, Receiver, Sender, UnboundedReceiver},
+    mpsc::{channel, unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
     Notify,
 };
 
@@ -31,7 +31,9 @@ pub struct RedisCtl {
     pub worker: HcWorkerState,
     pub node: HcNodeState,
     pub redis_url: String,
-    pub url_result: RedisResult<Client>,
+    pub client: Client,
+    pub pool: RedisPool,
+    
     pub notify: Arc<Notify>,
     pub client_caches: LinkedList<MultiplexedConnection>,
     pub client_rv: Receiver<Option<MultiplexedConnection>>,
@@ -39,6 +41,7 @@ pub struct RedisCtl {
     pub client_num: i32,
 
     pub subs_sender: Option<Sender<()>>,
+    pub keep_clients: HashMap<u16, UnboundedSender<RedisMsg>>,
 }
 
 impl RedisCtl {
@@ -50,7 +53,7 @@ impl RedisCtl {
     ) -> Self {
         let (client_sd, client_rv) = channel(10);
         Self {
-            url_result: Client::open(redis_url.clone()),
+            client: Client::open(redis_url.clone()).unwrap(),
             receiver,
             worker,
             node,
@@ -61,6 +64,8 @@ impl RedisCtl {
             client_rv,
             client_num: 0,
             subs_sender: None,
+
+            keep_clients: HashMap::new(),
         }
     }
 
@@ -100,6 +105,7 @@ impl RedisCtl {
                 }
                 pipe.query_async::<Value>(&mut client).await
             }
+            _ => return,
         };
 
         match ret {
@@ -216,16 +222,14 @@ impl RedisCtl {
                 }
                 return Ok(self.client_caches.pop_front().unwrap());
             }
-            if let Ok(c) = &self.url_result {
-                match c.get_multiplexed_async_connection().await {
-                    Ok(v) => {
-                        self.client_num += 1;
-                        return Ok(v);
-                    }
-                    Err(e) => {
-                        println!("redis error === {:?}", e);
-                        return Err(e);
-                    }
+            match self.client.get_multiplexed_async_connection().await {
+                Ok(v) => {
+                    self.client_num += 1;
+                    return Ok(v);
+                }
+                Err(e) => {
+                    println!("redis error === {:?}", e);
+                    return Err(e);
                 }
             }
         }
@@ -238,36 +242,32 @@ impl RedisCtl {
                 val = self.receiver.recv() => {
                     // 所有的sender均被关掉, 退出
                     if let Some(v) = val {
-                        if let Err(e) = &self.url_result {
-                            Self::send_err_result(&mut self.worker, v.service_id, v.session, format!("redis: {:?}", e)).await;
+                        // 订阅消息, 走订阅渠道
+                        if v.cmd.is_no_response() {
+                            let (sender, receiver) = channel(1);
+                            println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {:?}", receiver.is_closed());
+                            println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab {:?}", sender.is_closed());
+
+                            self.subs_sender = Some(sender);
+
+                            let c = self.client.clone();
+                            let worker = self.worker.clone();
+                            tokio::spawn(async move {
+                                println!("do_subs_request ================ {:?} {:?}", c, receiver.is_closed());
+                                Self::do_subs_request(c, v, worker, receiver).await;
+                            });
                         } else {
-                            // 订阅消息, 走订阅渠道
-                            if v.cmd.is_no_response() {
-                                let (sender, receiver) = channel(1);
-                                println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {:?}", receiver.is_closed());
-                                println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab {:?}", sender.is_closed());
 
-                                self.subs_sender = Some(sender);
-
-                                let c = self.url_result.as_ref().ok().unwrap().clone();
-                                let worker = self.worker.clone();
-                                tokio::spawn(async move {
-                                    println!("do_subs_request ================ {:?} {:?}", c, receiver.is_closed());
-                                    Self::do_subs_request(c, v, worker, receiver).await;
-                                });
-                            } else {
-
-                                match self.get_connection().await {
-                                    Err(e) => {
-                                        Self::send_err_result(&mut self.worker, v.service_id, v.session, format!("redis: {:?}", e)).await;
-                                    }
-                                    Ok(c) => {
-                                        let worker = self.worker.clone();
-                                        let client_sd = self.client_sd.clone();
-                                        tokio::spawn(async move {
-                                            Self::do_request(c, v, client_sd, worker).await;
-                                        });
-                                    }
+                            match self.get_connection().await {
+                                Err(e) => {
+                                    Self::send_err_result(&mut self.worker, v.service_id, v.session, format!("redis: {:?}", e)).await;
+                                }
+                                Ok(c) => {
+                                    let worker = self.worker.clone();
+                                    let client_sd = self.client_sd.clone();
+                                    tokio::spawn(async move {
+                                        Self::do_request(c, v, client_sd, worker).await;
+                                    });
                                 }
                             }
                         }
@@ -290,6 +290,88 @@ impl RedisCtl {
             }
         }
         // let mut connection = self.url_result.unwrap().get_async_connection().await.unwrap();
+    }
+
+    pub async fn inner_keep_info(
+        client: Client,
+        worker: &mut HcWorkerState,
+        mut receiver: UnboundedReceiver<RedisMsg>,
+    ) -> Result<(), RedisError> {
+        // let mut con = client.await?;
+        // loop {
+        //     tokio::select! {
+        //         msg = receiver.recv() => {
+        //             match msg {
+        //                 Some(msg) => {
+        //                     return Ok(())
+        //                     // Self::do_request_by_con(&mut con, msg, worker).await?;
+        //                 }
+        //                 None => {
+        //                     return Ok(())
+        //                 }
+        //             }
+        //         }
+        //     };
+        // }
+
+        Ok(())
+    }
+
+    pub async fn do_keep_info(
+        client: Client,
+        mut worker: HcWorkerState,
+        receiver: UnboundedReceiver<RedisMsg>,
+        session: i64,
+        service_id: u32,
+    ) {
+        if let Err(e) = Self::inner_keep_info(client, &mut worker, receiver).await {
+            Self::send_err_result(&mut worker, service_id, session, format!("{:?}", e)).await;
+        }
+    }
+
+    pub fn create_keep(&mut self, msg: RedisMsg) {
+        let mut key = 0;
+        for i in 1..u16::MAX {
+            if !self.keep_clients.contains_key(&i) {
+                key = i;
+                break;
+            }
+        }
+
+        let (session, service_id) = (msg.session, msg.service_id);
+        let (s, r) = unbounded_channel();
+        self.keep_clients.insert(key, s);
+        let c = self.client.clone();
+        let worker = self.worker.clone();
+        tokio::spawn(async move {
+            Self::do_keep_info(c, worker, r, session, service_id).await;
+        });
+        self.worker
+            .send_integer_msg(key as i64, msg.service_id, msg.session);
+    }
+
+    pub async fn deal_keep_msg(&mut self, msg: RedisMsg) {
+        let (session, service_id) = (msg.session, msg.service_id);
+        let mut is_close = false;
+        let k = msg.keep;
+        if let Some(s) = self.keep_clients.get(&k) {
+            if let Err(_) = s.send(msg) {
+                is_close = true;
+                self.keep_clients.remove(&k);
+            }
+        } else {
+            is_close = true;
+        }
+
+        if is_close {
+            Self::send_err_result(
+                &mut self.worker,
+                service_id,
+                session,
+                "sender close".to_string(),
+            )
+            .await;
+        }
     }
 
     async fn inner_server(&mut self) {}

@@ -295,7 +295,7 @@ impl MysqlCtl {
                                 self.create_keep(v);
                                 continue;
                             },
-                            MysqlCmd::RemoveKeep(id) => {
+                            MysqlCmd::DelKeep(id) => {
                                 self.keep_clients.remove(id);
                                 continue;
                             }

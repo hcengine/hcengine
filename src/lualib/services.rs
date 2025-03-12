@@ -5,6 +5,7 @@ use hclua::{
 };
 use hcnet::{NetConn, Settings};
 use log::{debug, error, info, trace, warn};
+use redis::RedisError;
 
 use crate::{
     http::{HttpClient, HttpServer},
@@ -304,7 +305,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
 
         table.set(
             "set_redis_url",
-            hclua::function1(move |redis_url: String| -> u32 {
+            hclua::function1(move |redis_url: String| -> Result<u32, RedisError> {
                 (*service).node.set_redis_url(redis_url)
             }),
         );
@@ -368,7 +369,7 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                     let session = (*service).node.next_seq();
                     let service_id = (*service).get_id();
                     let sender = (*service).worker.sender.clone();
-                    let cmd = MysqlCmd::RemoveKeep(keep);
+                    let cmd = MysqlCmd::DelKeep(keep);
                     let _ = sender.send(HcMsg::mysql_keep_msg(url_id, 0, service_id, session, cmd));
                     session
                 },

@@ -5,6 +5,7 @@ use std::{sync::{
 
 use algorithm::HashMap;
 use mysql_async::Opts;
+use redis::{Client, RedisError};
 use tokio::sync::mpsc::{Sender, UnboundedSender};
 
 use crate::{ConfigOption, HcMsg};
@@ -51,16 +52,17 @@ impl HcNodeState {
         v.get(name).map(|v| *v)
     }
 
-    pub fn set_redis_url(&mut self, val: String) -> u32 {
+    pub fn set_redis_url(&mut self, val: String) -> Result<u32, RedisError> {
+        let _ = Client::open(&*val)?;
         let mut map = self.redis_url_map.write().unwrap();
         let index = map.len() as u32 + 1;
         for (k, v) in map.iter() {
             if v == &val {
-                return *k;
+                return Ok(*k);
             }
         }
         map.insert(index, val);
-        index
+        Ok(index)
     }
 
     pub fn exist_redis_url(&mut self, url_id: &u32) -> bool {

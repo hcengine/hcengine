@@ -187,6 +187,18 @@ impl HcMsg {
         HcMsg::Redis(RedisMsg {
             url_id,
             cmd,
+            keep: 0,
+            service_id,
+            session,
+        })
+    }
+
+    
+    pub fn redis_keep_msg(url_id: u32, keep: u16, service_id: u32, session: i64, cmd: RedisCmd) -> Self {
+        HcMsg::Redis(RedisMsg {
+            url_id,
+            cmd,
+            keep,
             service_id,
             session,
         })
