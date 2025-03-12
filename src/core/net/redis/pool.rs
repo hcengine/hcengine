@@ -91,6 +91,7 @@ impl RedisPool {
     pub fn recycle(&self, client: MultiplexedConnection) {
         let mut l = self.inner.client_caches.lock().unwrap();
         l.push_back(client);
+        println!("recycle redis client now len = {:?}", l.len());
     }
 }
 

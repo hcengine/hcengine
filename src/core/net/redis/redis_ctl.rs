@@ -22,7 +22,8 @@ use tokio::sync::{
 
 use super::{PoolClient, RedisGetConn, RedisMsg, RedisPool};
 use crate::{
-    core::worker, wrapper::WrapperLuaMsg, Config, HcMsg, HcNodeState, HcWorkerState, LuaMsg, RedisCmd,
+    core::worker, wrapper::WrapperLuaMsg, Config, HcMsg, HcNodeState, HcWorkerState, LuaMsg,
+    RedisCmd,
 };
 use futures_util::StreamExt;
 
@@ -33,13 +34,12 @@ pub struct RedisCtl {
     pub redis_url: String,
     pub client: Client,
     pub pool: RedisPool,
-    
+
     // pub notify: Arc<Notify>,
     // pub client_caches: LinkedList<MultiplexedConnection>,
     // pub client_rv: Receiver<Option<MultiplexedConnection>>,
     // pub client_sd: Sender<Option<MultiplexedConnection>>,
     // pub client_num: i32,
-
     pub subs_sender: Option<Sender<()>>,
     pub keep_clients: HashMap<u16, UnboundedSender<RedisMsg>>,
 }
@@ -77,21 +77,16 @@ impl RedisCtl {
         session: i64,
         err: String,
     ) {
-        let data = BinaryMut::new();
-        println!("send err result ====== {:?}", err);
-        let msg = LuaMsg {
-            ty: Config::TY_ERROR,
-            sender: 0,
-            receiver: service_id,
-            sessionid: session,
-            err: Some(err),
-            data,
-            ..Default::default()
-        };
-        let _ = worker.sender.send(HcMsg::RespMsg(msg));
+        let _ = worker
+            .sender
+            .send(HcMsg::RespMsg(LuaMsg::new_error(err, service_id, session)));
     }
 
-    pub async fn inner_con_request(client: &mut PoolClient, msg: RedisMsg, worker: &mut HcWorkerState) -> RedisResult<()> {
+    pub async fn inner_con_request(
+        client: &mut PoolClient,
+        msg: RedisMsg,
+        worker: &mut HcWorkerState,
+    ) -> RedisResult<()> {
         let (session, service_id) = (msg.session, msg.service_id);
         let ret = match msg.cmd {
             super::RedisCmd::One(cmd) => cmd.query_async::<Value>(client).await,
@@ -124,25 +119,25 @@ impl RedisCtl {
             }
             Err(e) => {
                 // let _ = client_sd.send(None);
-                Self::send_err_result(worker, service_id, session, format!("redis: {:?}", e))
-                    .await;
+                Self::send_err_result(worker, service_id, session, format!("redis: {:?}", e)).await;
             }
         }
         Ok(())
     }
 
-    pub async fn do_request(
-        client: RedisGetConn,
-        msg: RedisMsg,
-        mut worker: HcWorkerState,
-    ) {
+    pub async fn do_request(client: RedisGetConn, msg: RedisMsg, mut worker: HcWorkerState) {
         match client.get().await {
             Ok(mut client) => {
                 let _ = Self::inner_con_request(&mut client, msg, &mut worker).await;
             }
             Err(e) => {
-                Self::send_err_result(&mut worker, msg.service_id, msg.session, format!("redis: {:?}", e))
-                    .await;
+                Self::send_err_result(
+                    &mut worker,
+                    msg.service_id,
+                    msg.session,
+                    format!("redis: {:?}", e),
+                )
+                .await;
             }
         }
     }

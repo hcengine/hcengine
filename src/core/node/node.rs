@@ -237,18 +237,9 @@ impl HcNode {
                 HcMsg::Oper(HcOper::TickTimer(service_id, timer_id, is_repeat)) => {
                     let worker_id = Config::get_workid(service_id);
                     if let Some(worker) = self.get_worker(worker_id) {
-                        let mut data = BinaryMut::new();
-                        data.put_u64(timer_id);
-                        data.put_bool(is_repeat);
-                        let _ = worker.sender.send(HcMsg::RespMsg(LuaMsg {
-                            ty: Config::TY_TIMER,
-                            sender: 0,
-                            receiver: service_id,
-                            err: None,
-                            sessionid: 0,
-                            data,
-                            ..Default::default()
-                        }));
+                        let _ = worker.sender.send(HcMsg::RespMsg(LuaMsg::new_timer(
+                            timer_id, is_repeat, service_id,
+                        )));
                     }
                 }
                 _ => unreachable!(),

@@ -197,7 +197,12 @@ hc.async(function()
     val.keep = 20
     local ret, err = val:get("xx")
     hc.print("get_redis_keep redis ret === %o err = %o", ret, err)
-
+    val.keep = 1
+    local ret, err = val:get("xx")
+    hc.print("111111111 get_redis_keep redis ret === %o err = %o", ret, err)
+    val:del_redis_keep()
+    local ret, err = val:get("xx")
+    hc.print("222222222 get_redis_keep redis ret === %o err = %o", ret, err)
     redis:run_psubs_command(function(val)
         hc.print("redis subs val = %o", val)
     end, "channel*")
@@ -208,19 +213,19 @@ hc.async(function()
     -- hc.telnet 192.168.17.210 6379
 end)
 
--- hc.async(function()
---     local redis = require("hc.db.redis")
---     hc.print("zzzzzzzzzzzzzzzzzzz")
---     local index = 0
---     while true do
---         hc.print("aaaaaaaaaaaaaaa")
---         hc.sleep(10000)
---         hc.print("bbbbbbbbbbbbb")
---         redis:run_redis_command("PUBLISH", "channel", string.format("ok%d", index))
---         index = index + 1
---         collectgarbage("collect")
---     end
--- end)
+hc.async(function()
+    local redis = require("hc.db.redis")
+    hc.print("zzzzzzzzzzzzzzzzzzz")
+    local index = 0
+    while true do
+        hc.print("aaaaaaaaaaaaaaa")
+        hc.sleep(10000)
+        hc.print("bbbbbbbbbbbbb")
+        redis:run_redis_command("PUBLISH", "channel", string.format("ok%d", index))
+        index = index + 1
+        collectgarbage("collect")
+    end
+end)
 
 
 -- hc.async(function() 

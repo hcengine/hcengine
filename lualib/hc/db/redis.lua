@@ -36,7 +36,7 @@ function redis:get_redis_keep()
 end
 
 ---设置默认redis的url映射索引
-function redis:det_redis_keep()
+function redis:del_redis_keep()
     _del_redis_keep(self.index, self.keep or 0)
 end
 
@@ -83,8 +83,13 @@ local function redis_default(r, key)
 end
 
 local function redis_index(r, key)
-    if redis[key] then
-        return redis[key]
+    local func = rawget(redis, key)
+    if func then
+        return func
+    end
+    func = rawget(r, key)
+    if func then
+        return func
     end
     return redis_default(r, key)
 end

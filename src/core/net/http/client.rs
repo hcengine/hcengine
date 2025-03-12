@@ -5,9 +5,7 @@ use wmhttp::{Client, ClientOption, ProtError, ProtResult, RecvRequest, RecvRespo
 use crate::{wrapper::WrapperLuaMsg, Config, HcMsg, HcWorkerState, LuaMsg};
 
 // TODO 缓存请求, 复用链接
-pub struct HttpClient {
-
-}
+pub struct HttpClient {}
 
 impl HttpClient {
     pub async fn do_request(
@@ -31,20 +29,13 @@ impl HttpClient {
                 };
                 msg.obj = Some(WrapperLuaMsg::response(res));
                 let _ = sender.send(HcMsg::RespMsg(msg));
-                
             }
             Err(e) => {
-                let data = BinaryMut::new();
-                let msg = LuaMsg {
-                    ty: Config::TY_ERROR,
-                    sender: 0,
-                    receiver: service_id,
-                    sessionid: session,
-                    err: Some(format!("{}", e)),
-                    data,
-                    ..Default::default()
-                };
-                let _ = sender.send(HcMsg::RespMsg(msg));
+                let _ = sender.send(HcMsg::RespMsg(LuaMsg::new_error(
+                    format!("{}", e),
+                    service_id,
+                    session,
+                )));
 
                 // let _ = sender
                 //     .send(HcMsg::http_return(

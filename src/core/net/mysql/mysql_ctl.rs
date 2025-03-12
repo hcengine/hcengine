@@ -66,18 +66,9 @@ impl MysqlCtl {
         session: i64,
         err: String,
     ) {
-        let data = BinaryMut::new();
-        println!("send err result ====== {:?}", err);
-        let msg = LuaMsg {
-            ty: Config::TY_ERROR,
-            sender: 0,
-            receiver: service_id,
-            sessionid: session,
-            err: Some(err),
-            data,
-            ..Default::default()
-        };
-        let _ = worker.sender.send(HcMsg::RespMsg(msg));
+        let _ = worker
+            .sender
+            .send(HcMsg::RespMsg(LuaMsg::new_error(err, service_id, session)));
     }
 
     pub async fn send_mysql_value(

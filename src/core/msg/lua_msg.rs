@@ -1,7 +1,9 @@
+use std::fmt::Write;
+
 use algorithm::buf::{BinaryMut, Bt, BtMut};
 use hclua::{lua_State, Lua, LuaObject, LuaPush, ObjectMacro};
 
-use crate::core::wrapper::WrapperLuaMsg;
+use crate::{core::wrapper::WrapperLuaMsg, Config};
 
 #[derive(Default, ObjectMacro)]
 #[hclua_cfg(name = LuaMsg)]
@@ -32,6 +34,66 @@ impl LuaMsg {
         }
     }
 
+    pub fn new_integer(val: i64, service_id: u32, session: i64) -> Self {
+        let mut data = BinaryMut::new();
+        data.put_i64(val);
+        LuaMsg {
+            ty: Config::TY_INTEGER,
+            receiver: service_id,
+            sessionid: session,
+            data,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_number(val: f64, service_id: u32, session: i64) -> Self {
+        let mut data = BinaryMut::new();
+        data.put_f64(val);
+        LuaMsg {
+            ty: Config::TY_NUMBER,
+            receiver: service_id,
+            sessionid: session,
+            data,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_string(val: &str, service_id: u32, session: i64) -> Self {
+        let mut data = BinaryMut::new();
+        data.write_str(val).expect("ok");
+        LuaMsg {
+            ty: Config::TY_STRING,
+            receiver: service_id,
+            sessionid: session,
+            data,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_timer(timer_id: u64, is_repeat: bool, service_id: u32) -> Self {
+        let mut data = BinaryMut::new();
+        data.put_u64(timer_id);
+        data.put_bool(is_repeat);
+        LuaMsg {
+            ty: Config::TY_TIMER,
+            receiver: service_id,
+            data,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_error(err: String, service_id: u32, session: i64) -> Self {
+        let data = BinaryMut::new();
+        LuaMsg {
+            ty: Config::TY_ERROR,
+            receiver: service_id,
+            sessionid: session,
+            err: Some(err),
+            data,
+            ..Default::default()
+        }
+    }
+
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
         LuaObject::<LuaMsg>::object_def(lua, "read_bool", hclua::function1(Self::read_bool));
@@ -48,7 +110,6 @@ impl LuaMsg {
         LuaObject::<LuaMsg>::object_def(lua, "write_f64", hclua::function2(Self::write_f64));
         LuaObject::<LuaMsg>::object_def(lua, "write_str", hclua::function2(Self::write_str));
         LuaObject::<LuaMsg>::object_register(lua, "read_obj", Self::read_obj);
-        
     }
 
     pub fn write_bool(&mut self, val: bool) {
@@ -104,6 +165,4 @@ impl LuaMsg {
         let obj = unwrap_or!(msg.obj.take(), return 0);
         obj.push_to_lua(lua)
     }
-
-    
 }
