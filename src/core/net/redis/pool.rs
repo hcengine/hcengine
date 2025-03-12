@@ -40,6 +40,9 @@ pub struct RedisGetConn {
     pub pool: Arc<RedisPool>,
 }
 
+unsafe impl Send for RedisGetConn {}
+unsafe impl Sync for RedisGetConn {}
+
 pub struct PoolClient {
     pub pool: Arc<RedisPool>,
     pub client: Option<MultiplexedConnection>,
@@ -68,20 +71,21 @@ impl RedisPool {
     }
 
     pub async fn get_client(&self) -> RedisResult<PoolClient> {
-        let mut l = self.inner.client_caches.lock().unwrap();
-        if !l.is_empty() {
-            let client = l.pop_front().unwrap();
-            Ok(PoolClient {
-                client: Some(client),
-                pool: Arc::new(self.clone()),
-            })
-        } else {
-            let client = self.client.get_multiplexed_async_connection().await?;
-            Ok(PoolClient {
-                pool: Arc::new(self.clone()),
-                client: Some(client),
-            })
+        {
+            let mut l = self.inner.client_caches.lock().unwrap();
+            if !l.is_empty() {
+                let client = l.pop_front().unwrap();
+                return Ok(PoolClient {
+                    client: Some(client),
+                    pool: Arc::new(self.clone()),
+                })
+            }
         }
+        let client = self.client.get_multiplexed_async_connection().await?;
+        Ok(PoolClient {
+            pool: Arc::new(self.clone()),
+            client: Some(client),
+        })
     }
 
     pub fn recycle(&self, client: MultiplexedConnection) {

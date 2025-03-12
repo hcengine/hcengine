@@ -310,9 +310,38 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             }),
         );
 
+        
+        table.set(
+            "get_redis_keep",
+            hclua::function1(
+                move |url_id: u32| -> i64 {
+                    let session = (*service).node.next_seq();
+                    let service_id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    let cmd = RedisCmd::GetKeep;
+                    let _ = sender.send(HcMsg::redis_keep_msg(url_id, 0, service_id, session, cmd));
+                    session
+                },
+            ),
+        );
+
+        table.set(
+            "del_redis_keep",
+            hclua::function2(
+                move |url_id: u32, keep: u16| -> i64 {
+                    let session = (*service).node.next_seq();
+                    let service_id = (*service).get_id();
+                    let sender = (*service).worker.sender.clone();
+                    let cmd = RedisCmd::DelKeep(keep);
+                    let _ = sender.send(HcMsg::redis_keep_msg(url_id, 0, service_id, session, cmd));
+                    session
+                },
+            ),
+        );
+
         table.set(
             "run_redis_command",
-            hclua::function2(move |url_id: u32, cmd: RedisWrapperCmd| -> i64 {
+            hclua::function3(move |url_id: u32, keep: u16, cmd: RedisWrapperCmd| -> i64 {
                 // 订阅消息, session会被重复利用
                 let session = if cmd.0.is_no_response() {
                     (*service).node.next_unique_seq()
@@ -322,19 +351,19 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 let cmd = RedisCmd::One(cmd.0);
-                let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd));
+                let _ = sender.send(HcMsg::redis_keep_msg(url_id, keep, service_id, session, cmd));
                 session
             }),
         );
 
         table.set(
             "run_redis_batch_command",
-            hclua::function2(move |url_id: u32, cmd: RedisWrapperBatchCmd| -> i64 {
+            hclua::function3(move |url_id: u32, keep: u16, cmd: RedisWrapperBatchCmd| -> i64 {
                 let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
                 let cmd = RedisCmd::Batch(cmd.0);
-                let _ = sender.send(HcMsg::redis_msg(url_id, service_id, session, cmd));
+                let _ = sender.send(HcMsg::redis_keep_msg(url_id, keep, service_id, session, cmd));
                 session
             }),
         );

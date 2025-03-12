@@ -11,7 +11,7 @@ pub use client::NetClient;
 pub use common::CommonHandler;
 use hcnet::NetSender;
 pub use server::NetServer;
-pub use redis::{RedisCmd, RedisSender, RedisMsg, RedisCtl};
+pub use redis::{RedisCmd, RedisSender, RedisMsg, RedisCtl, RedisGetConn, RedisPool, PoolClient};
 pub use mysql::*;
 
 #[derive(Debug, Clone)]

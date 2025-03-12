@@ -170,31 +170,43 @@ local http=require("socket.http");
 --     end)
 -- end)
 
--- hc.async(function() 
---     local redis = require("hc.db.redis")
+hc.async(function() 
+    local redis = require("hc.db.redis")
 
---     local id = redis:set_redis_url("redis://192.168.17.210:6379")
---     -- hc.print("redis id === %o zzzzzzzzzzzz", id)
---     -- local ret, err = redis:get("xx")
---     -- hc.print("redis ret === %o err = %o", ret, err)
---     -- local ret, err = redis:get("xx")
---     -- hc.print("redis ret === %o err = %o", ret, err)
---     local now = hc.now_ms();
---     hc.print("sleep pre = %o", hc.now_ms())
---     hc.sleep(3000)
---     hc.print("sleep after = %o", hc.now_ms() - now)
---     local ret, err = redis.get_with_index(id, "xx")
---     hc.print("redis ret === %o err = %o", ret, err)
---     hc.print("sssssssssssssssss");
---     -- hc.run_subs_command(function(val)
---     --     hc.print("redis subs val = %o", val)
---     -- end, "channel")
---     redis:run_psubs_command(function(val)
---         hc.print("redis subs val = %o", val)
---     end, "channel*")
---     hc.print("zzzzzzzzzzzzz");
---     -- hc.telnet 192.168.17.210 6379
--- end)
+    local id = redis:set_redis_url("redis://192.168.17.210:6379")
+    -- hc.print("redis id === %o zzzzzzzzzzzz", id)
+    -- local ret, err = redis:get("xx")
+    -- hc.print("redis ret === %o err = %o", ret, err)
+    -- local ret, err = redis:get("xx")
+    -- hc.print("redis ret === %o err = %o", ret, err)
+    local now = hc.now_ms();
+    hc.print("sleep pre = %o", hc.now_ms())
+    hc.sleep(3000)
+    hc.print("sleep after = %o", hc.now_ms() - now)
+    local ret, err = redis:get("xx")
+    hc.print("redis ret === %o err = %o", ret, err)
+    hc.print("sssssssssssssssss");
+    -- hc.run_subs_command(function(val)
+    --     hc.print("redis subs val = %o", val)
+    -- end, "channel")
+    
+    local val = redis:build_connect({})
+    val:get_redis_keep();
+    local ret, err = val:get("xx")
+    hc.print("get_redis_keep redis ret === %o err = %o", ret, err)
+    val.keep = 20
+    local ret, err = val:get("xx")
+    hc.print("get_redis_keep redis ret === %o err = %o", ret, err)
+
+    redis:run_psubs_command(function(val)
+        hc.print("redis subs val = %o", val)
+    end, "channel*")
+    hc.print("zzzzzzzzzzzzz");
+    
+
+
+    -- hc.telnet 192.168.17.210 6379
+end)
 
 -- hc.async(function()
 --     local redis = require("hc.db.redis")
@@ -211,51 +223,51 @@ local http=require("socket.http");
 -- end)
 
 
-hc.async(function() 
+-- hc.async(function() 
 
-    local mysql = require("hc.db.mysql")
-    hc.print("aaaaaaaaaaaaaaaaaaaaaaaaa")
-    hc.print("mysql = %o", hc.env("mysql"))
-    hc.print("bbbbbbbbbbbbbbbbbbbbbbbbbbb")
-    local id = mysql:set_mysql_url(hc.env("mysql"))
-    local val = mysql:build_connect({})
-    -- hc.print("cccccccccccccccccccccccccc id = %o", id)
-    -- local ret, err = hc.wait(hc.run_mysql_only(id, "select 1"))
-    -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
-    -- local ret, err = hc.wait(hc.run_mysql_one(id, "select 1, 2, 3, \"a\""))
-    -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
-    -- local ret, err = hc.wait(hc.run_mysql_query(id, "select * from engine_account limit 10"))
-    -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
+--     local mysql = require("hc.db.mysql")
+--     hc.print("aaaaaaaaaaaaaaaaaaaaaaaaa")
+--     hc.print("mysql = %o", hc.env("mysql"))
+--     hc.print("bbbbbbbbbbbbbbbbbbbbbbbbbbb")
+--     local id = mysql:set_mysql_url(hc.env("mysql"))
+--     local val = mysql:build_connect({})
+--     -- hc.print("cccccccccccccccccccccccccc id = %o", id)
+--     -- local ret, err = hc.wait(hc.run_mysql_only(id, "select 1"))
+--     -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
+--     -- local ret, err = hc.wait(hc.run_mysql_one(id, "select 1, 2, 3, \"a\""))
+--     -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
+--     -- local ret, err = hc.wait(hc.run_mysql_query(id, "select * from engine_account limit 10"))
+--     -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
     
-    val:run_mysql_iter(function(val, err)
-        hc.print("zzzzzzzzzzzzzzzzz val = %o err = %o", val, err)
-    end, "select * from engine_account limit 10")
+--     val:run_mysql_iter(function(val, err)
+--         hc.print("zzzzzzzzzzzzzzzzz val = %o err = %o", val, err)
+--     end, "select * from engine_account limit 10")
 
-    local keep, err = val:get_mysql_keep()
-    val.keep = keep
-    hc.print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx get_mysql_keep = %o, err = %o", keep, err)
-    -- val:run_
-    -- val.index = 3
-    val:run_mysql_ignore([[CREATE TEMPORARY TABLE tmp_table (
-         id INT PRIMARY key AUTO_INCREMENT,
-         name VARCHAR(10) NOT NULL,
-         value INTEGER NOT NULL
-        )]])
-    local ret, err = val:run_mysql_insert("insert tmp_table(name, value) values(\"aaaa\", 2)");
-    hc.print("insert  ret = %o, err = %o", ret, err)
-    local ret, err = val:run_mysql_insert("insert tmp_table(name, value) values(\"aaaa\", 3)");
-    hc.print("insert  ret = %o, err = %o", ret, err)
-    local ret, err = val:run_mysql_only("select 1")
-    val:del_mysql_keep()
-    local ret, err = val:run_mysql_only("select 1")
-    hc.print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ret = %o, err = %o", ret, err)
---     CREATE TEMPORARY TABLE tmp_table (
---  name VARCHAR(10) NOT NULL,
---  value INTEGER NOT NULL
--- )
-    hc.print("end mysql")
-    -- hc.telnet 192.168.17.210 6379
-end)
+--     local keep, err = val:get_mysql_keep()
+--     val.keep = keep
+--     hc.print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx get_mysql_keep = %o, err = %o", keep, err)
+--     -- val:run_
+--     -- val.index = 3
+--     val:run_mysql_ignore([[CREATE TEMPORARY TABLE tmp_table (
+--          id INT PRIMARY key AUTO_INCREMENT,
+--          name VARCHAR(10) NOT NULL,
+--          value INTEGER NOT NULL
+--         )]])
+--     local ret, err = val:run_mysql_insert("insert tmp_table(name, value) values(\"aaaa\", 2)");
+--     hc.print("insert  ret = %o, err = %o", ret, err)
+--     local ret, err = val:run_mysql_insert("insert tmp_table(name, value) values(\"aaaa\", 3)");
+--     hc.print("insert  ret = %o, err = %o", ret, err)
+--     local ret, err = val:run_mysql_only("select 1")
+--     val:del_mysql_keep()
+--     local ret, err = val:run_mysql_only("select 1")
+--     hc.print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ret = %o, err = %o", ret, err)
+-- --     CREATE TEMPORARY TABLE tmp_table (
+-- --  name VARCHAR(10) NOT NULL,
+-- --  value INTEGER NOT NULL
+-- -- )
+--     hc.print("end mysql")
+--     -- hc.telnet 192.168.17.210 6379
+-- end)
 
 
 

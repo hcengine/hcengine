@@ -5,6 +5,7 @@ mod redis_ctl;
 mod pool;
 
 pub use redis_ctl::RedisCtl;
+pub use pool::{PoolClient, RedisPool, RedisGetConn};
 
 pub enum RedisCmd {
     GetKeep,
