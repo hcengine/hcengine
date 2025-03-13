@@ -3,7 +3,7 @@ local hc1 = require("lualib.hc")
 local hc2 = require("lualib.hc")
 
 local socket = require("socket")
-local http=require("socket.http");
+local http = require("socket.http");
 
 -- -- hc.print("socket = %o", socket)
 -- -- hc.print("http = %o", http)
@@ -170,7 +170,7 @@ local http=require("socket.http");
 --     end)
 -- end)
 
-hc.async(function() 
+hc.async(function()
     local redis = require("hc.db.redis")
 
     local id = redis:set_redis_url("redis://192.168.17.210:6379")
@@ -189,7 +189,7 @@ hc.async(function()
     -- hc.run_subs_command(function(val)
     --     hc.print("redis subs val = %o", val)
     -- end, "channel")
-    
+
     local val = redis:build_connect({})
     val:get_redis_keep();
     local ret, err = val:get("xx")
@@ -207,7 +207,7 @@ hc.async(function()
         hc.print("redis subs val = %o", val)
     end, "channel*")
     hc.print("zzzzzzzzzzzzz");
-    
+
 
 
     -- hc.telnet 192.168.17.210 6379
@@ -228,8 +228,7 @@ hc.async(function()
 end)
 
 
--- hc.async(function() 
-
+-- hc.async(function()
 --     local mysql = require("hc.db.mysql")
 --     hc.print("aaaaaaaaaaaaaaaaaaaaaaaaa")
 --     hc.print("mysql = %o", hc.env("mysql"))
@@ -243,7 +242,7 @@ end)
 --     -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
 --     -- local ret, err = hc.wait(hc.run_mysql_query(id, "select * from engine_account limit 10"))
 --     -- hc.print("ccccccccccccccccccccccccccaaaacccccccccccccccccccccccccc = %o err = %o", ret, err)
-    
+
 --     val:run_mysql_iter(function(val, err)
 --         hc.print("zzzzzzzzzzzzzzzzz val = %o err = %o", val, err)
 --     end, "select * from engine_account limit 10")

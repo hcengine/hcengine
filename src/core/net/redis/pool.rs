@@ -45,7 +45,7 @@ unsafe impl Sync for RedisGetConn {}
 
 pub struct PoolClient {
     pub pool: Arc<RedisPool>,
-    pub client: Option<MultiplexedConnection>,
+    client: Option<MultiplexedConnection>,
 }
 
 impl Inner {
@@ -74,11 +74,12 @@ impl RedisPool {
         {
             let mut l = self.inner.client_caches.lock().unwrap();
             if !l.is_empty() {
+                println!("get redis cache from list now is = {}", l.len());
                 let client = l.pop_front().unwrap();
                 return Ok(PoolClient {
                     client: Some(client),
                     pool: Arc::new(self.clone()),
-                })
+                });
             }
         }
         let client = self.client.get_multiplexed_async_connection().await?;

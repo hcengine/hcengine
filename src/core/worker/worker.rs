@@ -570,7 +570,6 @@ impl HcWorker {
                 ctl.server().await;
             });
         } else {
-            let data = BinaryMut::new();
             let _ = self
                 .node_state
                 .sender
