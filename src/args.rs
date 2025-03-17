@@ -15,6 +15,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone, Bpaf)]
 #[allow(dead_code)]
+/// 所有子命行令共享的参数
 struct Shared {
     /// 禁用默认输出
     pub(crate) disable_stdout: bool,
@@ -42,10 +43,17 @@ struct StopConfig {
 
 #[derive(Debug, Clone, Bpaf)]
 #[allow(dead_code)]
+/// run子命令行的独有参数
 struct RunConfig {
     /// 配置文件路径
     #[bpaf(short, long, fallback("hc.toml".to_string()))]
     pub(crate) config: String,
+    #[bpaf(short, long, fallback(None))]
+    /// 工作目录
+    pub(crate) worker_path: Option<String>,
+    #[bpaf(short, long, fallback(None))]
+    /// 启动文件
+    pub(crate) bootsrap: Option<String>,
 }
 
 #[derive(Debug, Clone, Bpaf)]
@@ -164,6 +172,13 @@ pub async fn parse_env() -> io::Result<ConfigOption> {
             let mut option = read_config_from_path(config.config)?;
             if shared.verbose {
                 option.log_level = Some(LevelFilter::Trace);
+            }
+            if let Some(wp) = config.worker_path {
+                option.worker_path = Some(wp);
+            }
+            
+            if let Some(b) = config.bootsrap {
+                option.bootstrap = Some(b);
             }
             // option.after_load_option()?;
             return Ok(option);

@@ -13,13 +13,20 @@ use crate::{
 
 use super::ServiceConf;
 
+/// Lua的虚拟机封装
 pub struct LuaService {
+    /// Lua虚拟机
     lua: Lua,
+    /// 配置文件
     conf: ServiceConf,
+    /// service的id，前三位为worker
     id: u32,
     unique: bool,
+    /// 提供与根节点的交互能力
     pub node: HcNodeState,
+    /// 提供与woker节点的交互能力
     pub worker: HcWorkerState,
+    /// 状态是否ok，即初始化是否成功或者
     ok: bool,
 }
 
@@ -50,6 +57,7 @@ impl LuaService {
         }
     }
 
+    /// 通过虚拟机取出LuaService
     pub unsafe fn get(lua: *mut lua_State) -> *mut LuaService {
         Lua::read_from_extraspace::<LuaService>(lua)
     }
@@ -86,6 +94,11 @@ impl LuaService {
 
             hclua_cjson::enable_cjson(&mut self.lua);
             hclua_socket::enable_socket_core(&mut self.lua);
+
+            println!("woooooooooooooooooooo = {:?}", self.node.get_woker_path());
+            if let Some(woker) = self.node.get_woker_path() {
+                self.lua.add_path(false, woker);
+            }
 
             self.lua.add_path(false, "lualib".to_string());
             self.lua.add_path(false, "luaext".to_string());

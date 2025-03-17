@@ -237,13 +237,12 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
 
         table.set(
             "send_msg",
-            hclua::function2(move |id: u64, msg: &mut WrapMessage| -> i64 {
+            hclua::function2(move |id: u64, msg: WrapObject<WrapMessage>| -> i64 {
                 println!("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {}", id);
-                let msg = Box::from_raw(msg);
                 let session = (*service).node.next_seq();
                 let service_id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
-                let _ = sender.send(HcMsg::send_msg(id, service_id, *msg));
+                let _ = sender.send(HcMsg::send_msg(id, service_id, msg.0));
                 session
             }),
         );

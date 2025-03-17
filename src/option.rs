@@ -32,4 +32,9 @@ pub struct ConfigOption {
     pub(crate) worker_num: usize,
     #[serde(default)]
     pub(crate) disable_stdout: bool,
+    #[serde(default)]
+    pub worker_path: Option<String>,
+    #[serde(default)]
+    pub bootstrap: Option<String>,
+    
 }

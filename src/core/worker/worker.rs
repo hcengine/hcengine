@@ -614,7 +614,6 @@ impl HcWorker {
                 "mysql error ================= {} {} {}",
                 msg.url_id, msg.service_id, msg.session
             );
-            let data = BinaryMut::new();
             let _ = self.state.sender.send(HcMsg::RespMsg(LuaMsg::new_error(
                 format!("不存在该id:{}的映射mysql地址", msg.url_id),
                 msg.service_id,

@@ -1,5 +1,6 @@
 
 local hc = require("hc.core")
+require("hc.util")
 require("hc.const")
 require("hc.timer")
 require("hc.trace")

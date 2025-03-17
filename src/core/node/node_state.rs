@@ -98,4 +98,8 @@ impl HcNodeState {
         let map = self.mysql_url_map.read().unwrap();
         map.get(url_id).map(|v| v.clone())
     }
+
+    pub fn get_woker_path(&self) -> Option<String> {
+        self.config.worker_path.clone()
+    }
 }

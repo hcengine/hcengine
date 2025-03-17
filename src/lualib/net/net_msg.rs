@@ -45,7 +45,6 @@ impl WrapMessage {
         }
     }
 
-    
     pub fn take_data(&mut self) -> Option<RawString> {
         let mut msg = Message::Unvaid;
         mem::swap(&mut msg, &mut self.msg);
@@ -58,7 +57,7 @@ impl WrapMessage {
                 return None;
             }
         };
-        return Some(RawString(data))
+        return Some(RawString(data));
     }
 
     pub fn clone_msg(&self) -> Self {
@@ -68,7 +67,7 @@ impl WrapMessage {
     pub fn pack_text(text: String) -> Self {
         WrapMessage::new(Message::Text(text))
     }
-    
+
     pub fn pack_binary(raw: RawString) -> Self {
         WrapMessage::new(Message::Binary(raw.0))
     }
@@ -92,6 +91,5 @@ impl WrapMessage {
         WrapMessage::object_static_def(lua, "pack_binary", hclua::function1(Self::pack_binary));
         WrapMessage::object_static_def(lua, "pack_ping", hclua::function1(Self::pack_ping));
         WrapMessage::object_static_def(lua, "pack_pong", hclua::function1(Self::pack_pong));
-        
     }
 }

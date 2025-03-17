@@ -21,9 +21,9 @@ hc.bind_listen = function(method, url, settings)
 end
 
 --- 绑定连接
---- @param method string | "'ws'" | "'tcp'" | "'kcp'"
+--- @param method string | "'ws'" | "'tcp'" | "'kcp'" | "'wss'" | "'tcps'" | "'kcps'"
 --- @param url string
---- @param settings table | nil
+--- @param settings net_settings | nil
 --- @param cb net_cb 
 hc.listen = function(method, url, settings, cb)
     local id = hc.wait(hc.bind_listen(method, url, settings))
@@ -79,7 +79,7 @@ local function _net_on_accept_dispath(id, new_id, socket_addr)
     end
     local on_accept = callback["on_accept"]
     if on_accept then
-        local cb = on_accept(new_id)
+        local cb = on_accept(new_id, socket_addr)
         if cb then
             data_listen_cb[new_id] = cb
         else
@@ -88,7 +88,7 @@ local function _net_on_accept_dispath(id, new_id, socket_addr)
     end
 end
 
-local function _net_on_close_dispath(id, new_id)
+local function _net_on_close_dispath(id, new_id, reason)
     hc.print("--------------- _net_on_close_dispath = %o, %o", id, new_id)
     local callback = data_listen_cb[new_id]
     if not callback then
@@ -96,7 +96,7 @@ local function _net_on_close_dispath(id, new_id)
     end
     local on_close = callback["on_close"]
     if on_close then
-        on_close(new_id)
+        on_close(new_id, reason)
     end
     data_listen_cb[new_id] = nil
     ready_connect_ids[new_id] = nil
