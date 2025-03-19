@@ -17,7 +17,6 @@ pub struct LuaMsg {
     #[hclua_skip]
     pub data: BinaryMut,
     #[hclua_skip]
-    // pub obj: Option<Box<()>>,
     pub obj: Option<WrapperLuaMsg>,
 }
 
@@ -89,6 +88,18 @@ impl LuaMsg {
             receiver: service_id,
             sessionid: session,
             err: Some(err),
+            data,
+            ..Default::default()
+        }
+    }
+    
+    pub fn new_func(func: String, service_id: u32, session: i64) -> Self {
+        let mut data = BinaryMut::new();
+        let _ = hcproto::encode_string(&mut data, &func);
+        LuaMsg {
+            ty: Config::TY_FUNC,
+            receiver: service_id,
+            sessionid: session,
             data,
             ..Default::default()
         }

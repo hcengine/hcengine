@@ -299,10 +299,11 @@ hc.TY_LUA_MSG = 5;
 hc.TY_NET = 6;
 hc.TY_TIMER = 7;
 hc.TY_ERROR = 8;
-hc.TY_REDIS = 9;
+hc.TY_FUNC = 9;
 hc.TY_HTTP_RES = 10;
 hc.TY_HTTP_REQ = 11;
-hc.TY_MYSQL = 12;
+hc.TY_REDIS = 33;
+hc.TY_MYSQL = 34;
 
 hc.register_protocol = function(t)
     local ty = t.ty
@@ -402,6 +403,25 @@ hc.register_protocol({
     dispatch = function() end,
 })
 
+
+hc.register_protocol({
+    name = "func",
+    ty = hc.TY_FUNC,
+    auto_unpack = true,
+    pack = function(val)
+        local msg = LuaMsg.new()
+        msg.ty = hc.TY_FUNC
+        msg:write_str(val)
+        return msg
+    end,
+    --- @param msg LuaMsg
+    unpack = function(msg)
+        -- local func, err = msg:read_str(), msg:get_err()
+        return { msg:read_str(), msg:get_err() }
+    end,
+    dispatch = function() end,
+})
+
 hc.register_protocol({
     name = "redis",
     ty = hc.TY_REDIS,
@@ -441,6 +461,17 @@ hc.register_protocol({
     end,
     dispatch = function() end,
 })
+
+-- 根据类型获取名字
+--- @param ty integer
+--- @return string | nil
+hc.get_proto_name = function(ty)
+    local data = protocol[ty]
+    if not data then
+        return nil
+    end
+    return data["name"]
+end
 
 ------protocol message ----------------------
 ---------------------------------------------

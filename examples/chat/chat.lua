@@ -4,9 +4,15 @@ hc.print("this is example chat")
 
 local online_users = {}
 
+local service_id = nil
+
 -- 广播消息, 将消息广播给所有人
 local function broast_msg(id, msg)
     local text = hc.trim(msg:get_string() or "")
+    if text == "close_service" then
+        hc.close_socket(service_id or 0, "关闭连接");
+        return
+    end
     local from = online_users[id] or "unknown"
     local msg = NetMsg.pack_text(string.format("%s:%s", from, text))
     -- hc.print("开始广播数据:%o:%o:%o", id, text,online_users)
@@ -27,9 +33,8 @@ hc.async(function()
                 -- 收到子连接的消息
                 ---@param msg NetMsg
                 on_msg = function(id, msg)
-                    hc.print("收到%o的消息, 类型为:%o", id, msg:get_type())
+                    hc.print("收到%o的消息, 类型为:%o", id, hc.get_net_name(msg:get_type()))
                     broast_msg(id, msg)
-
                 end,
                 -- 收到子链接关系的消息
                 on_close = function(id, reason)
@@ -40,7 +45,8 @@ hc.async(function()
         end,
         -- listen成功的消息
         on_open = function(id)
-            hc.print("service on open %o", id)
+            hc.print("服务器绑定成功:%o", id)
+            service_id = id
         end
     })
 end)

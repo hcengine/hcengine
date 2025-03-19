@@ -290,6 +290,9 @@ impl HcWorker {
                         .close_with_reason(hcnet::CloseCode::Normal, reason);
                 }
             }
+        } else if let Some(mut info) = self.net_servers.remove(&id) {
+            println!("关闭服务端连接");
+            let _ = info.close_with_reason(hcnet::CloseCode::Normal, reason);
         }
     }
 
@@ -305,7 +308,6 @@ impl HcWorker {
     }
 
     pub async fn http_incoming(&mut self, service_id: u32, id: u64, req: RecvRequest) {
-        println!("open conn ==== {:?} ", id);
         if let Some(service) = self.services.get_mut(&service_id) {
             unsafe {
                 if (*service.0).is_ok() {
@@ -327,7 +329,6 @@ impl HcWorker {
     }
 
     pub async fn http_outcoming(&mut self, id: u64, res: RecvResponse) {
-        println!("http_outcoming ==== {:?} ", id);
         let server_id = (id >> 32 & 0xFF) as u16;
         if let Some(s) = self.http_servers.get_mut(&server_id) {
             let _ = s.send_message(HcHttp::HttpOutcoming(id, res));
@@ -372,7 +373,6 @@ impl HcWorker {
     }
 
     pub async fn recv_msg(&mut self, id: u64, service_id: u32, msg: WrapMessage) {
-        println!("net_msg ==== {:?} ", id);
         if let Some(service) = self.services.get_mut(&service_id) {
             unsafe {
                 if (*service.0).is_ok() {
@@ -533,9 +533,6 @@ impl HcWorker {
     }
 
     pub async fn call_msg(&mut self, msg: LuaMsg) {
-        for id in &self.services {
-            println!("id === {:?}", id.0);
-        }
         if let Some(service) = self.services.get_mut(&msg.receiver) {
             unsafe {
                 if (*service.0).is_ok() {

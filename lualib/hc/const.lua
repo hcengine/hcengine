@@ -20,3 +20,10 @@ hc.NET_NAMES = {
     [hc.NET_SHUTDOWN] = "shutdown",
     [hc.NET_BAD] = "bad",
 }
+
+--- 根据类型获取名字
+--- @param ty integer
+--- @return string | nil
+hc.get_net_name = function(ty)
+    return hc.NET_NAMES[ty] or nil
+end
