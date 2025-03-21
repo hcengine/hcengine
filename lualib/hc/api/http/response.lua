@@ -23,7 +23,7 @@ function Response:version()
 end
 
 ---@param text string
-function Response:set_text(text)
+function Response:set_body(text)
 end
 
 ---@return string

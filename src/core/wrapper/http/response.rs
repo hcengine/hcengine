@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use hclua::{Lua, LuaObject, ObjectMacro};
+use hclua::{Lua, LuaObject, ObjectMacro, RawString};
 use webparse::{Response, StatusCode, WebError};
 use wmhttp::{Body, RecvResponse};
 
@@ -33,7 +33,7 @@ impl WrapperResponse {
         Object::object_def(lua, "status_str", hclua::function1(Self::status_str));
         
         Object::object_def(lua, "version", hclua::function1(Self::version));
-        Object::object_def(lua, "set_text", hclua::function2(Self::set_text));
+        Object::object_def(lua, "set_body", hclua::function2(Self::set_body));
         Object::object_def(lua, "get_text", hclua::function1(Self::get_text));
         Object::object_def(lua, "header_get", hclua::function2(Self::header_get));
         Object::object_def(lua, "header_set", hclua::function3(Self::header_set));
@@ -60,8 +60,8 @@ impl WrapperResponse {
         self.r.version().as_str()
     }
 
-    pub fn set_text(&mut self, text: String) {
-        self.r.body_mut().set_text(text);
+    pub fn set_body(&mut self, body: RawString) {
+        self.r.body_mut().set_data(body.0);
     }
 
     pub fn get_text(&mut self) -> Option<String> {

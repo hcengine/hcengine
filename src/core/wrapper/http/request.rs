@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
-use hclua::{impl_obj_fn, Lua, LuaObject, LuaPush, ObjectMacro};
-use webparse::{Request, Scheme, Url, Version, WebError};
+use hclua::{impl_obj_fn, Lua, LuaObject, LuaPush, ObjectMacro, RawString};
+use webparse::{Method, Request, Scheme, Url, Version, WebError};
 use wmhttp::{Body, RecvRequest};
 
 #[derive(ObjectMacro, Debug)]
@@ -14,7 +14,13 @@ pub struct WrapperRequest {
 
 impl Default for WrapperRequest {
     fn default() -> Self {
-        let r = Request::builder().body(Body::empty()).unwrap();
+        let r = Request::builder()
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Hcengine/1.0",
+            )
+            .body(Body::empty())
+            .unwrap();
         Self { r }
     }
 }
@@ -25,32 +31,34 @@ impl WrapperRequest {
     }
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
-        
+
         type Object = WrapperRequest;
         impl_obj_fn!(Object, lua, r, is_http2);
         Object::object_def(lua, "method", hclua::function1(Self::method));
+        Object::object_def(lua, "set_method", hclua::function2(Self::set_method));
+
         Object::object_def(lua, "set_url", hclua::function2(Self::set_url));
         Object::object_def(lua, "url", hclua::function1(Self::url));
-        
+
         Object::object_def(lua, "set_username", hclua::function2(Self::set_username));
         Object::object_def(lua, "username", hclua::function1(Self::username));
 
         Object::object_def(lua, "set_password", hclua::function2(Self::set_password));
         Object::object_def(lua, "password", hclua::function1(Self::password));
-        
+
         Object::object_def(lua, "set_domain", hclua::function2(Self::set_domain));
         Object::object_def(lua, "domain", hclua::function1(Self::domain));
-        
+
         Object::object_def(lua, "set_query", hclua::function2(Self::set_query));
         Object::object_def(lua, "query", hclua::function1(Self::query));
-        
+
         Object::object_def(lua, "set_port", hclua::function2(Self::set_port));
         Object::object_def(lua, "port", hclua::function1(Self::port));
 
         Object::object_def(lua, "set_version", hclua::function2(Self::set_version));
-        
+
         Object::object_def(lua, "version", hclua::function1(Self::version));
-        Object::object_def(lua, "set_text", hclua::function2(Self::set_text));
+        Object::object_def(lua, "set_body", hclua::function2(Self::set_body));
         Object::object_def(lua, "header_get", hclua::function2(Self::header_get));
         Object::object_def(lua, "header_set", hclua::function3(Self::header_set));
         Object::object_def(lua, "header_remove", hclua::function2(Self::header_remove));
@@ -60,6 +68,12 @@ impl WrapperRequest {
 
     pub fn method(&self) -> String {
         self.r.method().as_str().to_string()
+    }
+
+    pub fn set_method(&mut self, method: String) -> Result<(), WebError> {
+        let method = Method::from_str(&method)?;
+        self.r.set_method(method);
+        Ok(())
     }
 
     pub fn set_version(&mut self, version: String) {
@@ -74,7 +88,7 @@ impl WrapperRequest {
         let url = Url::parse(url.into_bytes())?;
         self.r.set_url(url);
         Ok(())
-    } 
+    }
 
     pub fn username(&self) -> Option<String> {
         self.r.url().username.clone()
@@ -107,7 +121,7 @@ impl WrapperRequest {
     pub fn set_query(&mut self, query: String) {
         self.r.url_mut().query = Some(query);
     }
-    
+
     pub fn port(&self) -> Option<u16> {
         self.r.url().port
     }
@@ -115,7 +129,7 @@ impl WrapperRequest {
     pub fn set_port(&mut self, port: u16) {
         self.r.url_mut().port = Some(port);
     }
-    
+
     pub fn path(&self) -> String {
         self.r.path().to_string()
     }
@@ -123,7 +137,7 @@ impl WrapperRequest {
     pub fn set_path(&mut self, path: String) {
         self.r.set_path(path);
     }
-    
+
     pub fn scheme(&self) -> String {
         self.r.scheme().as_str().to_string()
     }
@@ -134,13 +148,13 @@ impl WrapperRequest {
             Err(_) => self.r.set_scheme(Scheme::Http),
         }
     }
-    
+
     pub fn version(&self) -> &str {
         self.r.version().as_str()
     }
-    
-    pub fn set_text(&mut self, text: String) {
-        self.r.body_mut().set_text(text);
+
+    pub fn set_body(&mut self, body: RawString) {
+        self.r.body_mut().set_data(body.0);
     }
 
     pub fn get_host(&self) -> Option<String> {
@@ -154,11 +168,11 @@ impl WrapperRequest {
     pub fn header_set(&mut self, key: String, val: String) {
         self.r.headers_mut().insert(key, val);
     }
-    
+
     pub fn header_remove(&mut self, key: String) -> Option<String> {
         self.r.headers_mut().remove(&key).map(|v| v.to_string())
     }
-    
+
     pub fn header_all(&mut self) -> HashMap<String, String> {
         let mut ret = HashMap::new();
         for (k, v) in self.r.headers().iter() {

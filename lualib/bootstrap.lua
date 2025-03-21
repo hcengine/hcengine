@@ -145,13 +145,12 @@ local http = require("socket.http");
 
 -- hc.async(function()
 --     --@param req Request
---     hc.bind_http("0.0.0.0:8082", function(req)
---         local response = Response.new();
---         response:set_status_code(201)
+--     hc.bind_http("0.0.0.0:8082", function(req, res)
+--         res:set_status_code(201)
 --         local a = string.format("from lua!!!!!! %s", req:url())
---         response:set_text(a)
---         response:header_set("ok", "val")
---         return response
+--         res:set_body(a)
+--         res:header_set("ok", "val")
+--         return res
 --     end)
 --     --@type Request
 --     hc.timeout(1000, false, function()
@@ -324,3 +323,5 @@ end)
 -- --     hc.delay()
 -- --     hc.print("call end 2")
 -- -- end)
+
+hc.print("json value = %s", hc.encode_json({aaa = "cccc", ddd = 1.1}))

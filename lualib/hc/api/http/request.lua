@@ -4,9 +4,27 @@ error("辅助编译器解读")
 ---@class Request: object
 Request = { }
 
----@param text string
-function Request:set_text(text)
+
+---@param method string | "'GET'" | "'POST'" | "'OPTION'" | "'DELETE'" | "'PUT'"
+function Request:set_method(method)
 end
+
+---@param text string
+function Request:set_body(text)
+end
+
+---@param url string
+function Request:set_url(url)
+end
+
+---@return boolean
+function Request:is_http2()
+end
+
+---@return string
+function Request:url()
+end
+
 
 ---@return string
 function Request:header_get()
@@ -27,3 +45,4 @@ end
 ---@return table
 function Request:header_all()
 end
+
