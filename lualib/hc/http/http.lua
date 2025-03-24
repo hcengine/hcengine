@@ -6,6 +6,8 @@ local _http_request = core.http_request
 ---@class hc : core
 local hc = require("hc.core")
 
+hc.Router = require("hc.http.router")
+
 local router_table = {}
 
 local function calc_http_id(id)
@@ -15,9 +17,10 @@ end
 
 --- 绑定HTTP服务器
 ---@param addr string
-hc.bind_http = function(addr, callback)
+---@param router Router
+hc.bind_http = function(addr, router)
     local http_id = hc.wait(_bind_http(addr))
-    router_table[http_id] = callback
+    router_table[http_id] = router
     return http_id
 end
 
@@ -26,13 +29,12 @@ end
 local function _hc_http_incoming(id, req)
     local http_id = calc_http_id(id)
     ---@type Response
-    local res = Response.new()
-    if type(router_table[http_id]) == "function"  then
-        res = router_table[http_id](req, res)
-    elseif type(router_table[http_id]) == "table" then
-
-    end
-    if not res then
+    local res = nil
+    local router = router_table[http_id]
+    if router then
+        res = router:call(req)
+    else
+        res = Response:new()
         res:set_status_code(502)
         res:set_body("server internal error")
     end

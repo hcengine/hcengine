@@ -5,6 +5,8 @@ local _class = {}
 
 local unique_key = 0;
 
+CLS_MAGIC_KEY = -1234567;
+
 -- 取得新的 unique
 local function new_unique()
     unique_key = unique_key + 1;
@@ -23,7 +25,7 @@ end
 function get_all_cloned_obs_group_by()
     local values = {}
     for _, ob in pairs(all_cloned_obs) do
-        if type(ob) == "table" and ob.name and ob.dtored ~= true then
+        if type(ob) == "table" and ob.name and ob.is_ctor == true then
             values[ob.name] = values[ob.name] or {}
             table.insert(values[ob.name], ob)
         end
@@ -58,7 +60,7 @@ function clear_func_cache(c, func_name)
                 _class[c._unique_key][k] = nil
             end
         else
-            if type(_class[c][k]) == "function" and k ~= "base" and k ~= "dtor_OBJECT" then
+            if type(_class[c][k]) == "function" and k ~= "base" and k ~= "dtor_object" then
                 _class[c._unique_key][k] = nil
             end
         end
@@ -75,8 +77,15 @@ function get_class_func(c, func_name)
     return v[func_name]
 end
 
-function nil_func()
+function get_super(c, func_name)
+    if #c.super > 0 then
+        return get_class_func(c.super[1], func_name)
+    end
     return nil
+end
+
+function is_vaild(v)
+    return v.is_ctor
 end
 
 -- 在 table plist 中查找 k
@@ -86,17 +95,18 @@ local function search(k, plist)
         local v = _class[plist[i]._unique_key][k]
 
         -- 若基类中存在相关的值，则返回父类的值
-        if v ~= nil_func then
+        if v ~= CLS_MAGIC_KEY then
             return v
         end
     end
     return nil
 end
 
+---类定义的,名称为必须
+---@param name string
+---@param ... any
 function class(name, ...)
     local class_type = {}
-    class_type.ctor = false
-    class_type.dtor = false
     class_type.name = name
     class_type._unique_key = new_unique()
     class_type.super = { ... }
@@ -105,11 +115,11 @@ function class(name, ...)
 
     -- 类对象创建函数
     class_type.new = function(...)
-        local obj = { is_ctor = true, dtored = false }
+        local obj = { is_ctor = true }
 
-        for key, value in pairs(_class[class_type._unique_key]) do
-            obj[key] = value
-        end
+        -- for key, value in pairs(_class[class_type._unique_key]) do
+        --     obj[key] = value
+        -- end
 
         -- 这一句被我提前了，解决构造函数里不能调成员函数的问题
         -- 设置新对象的元表，其中的 index 元方法设置为一个父类方法查找表
@@ -155,19 +165,11 @@ function class(name, ...)
 
             if _class[c._unique_key] then
                 for k, v in pairs(_class[c._unique_key]) do
-                    if v ~= nil_func then
-                        if _DEBUG then
-                            func_list[k] = function(...)
-                                return v(...)
-                            end
-                        else
-                            func_list[k] = v
-                        end
+                    if v ~= CLS_MAGIC_KEY then
+                        func_list[k] = v
                     end
                 end
             end
-
-            func_list["is_ctor"] = nil
         end
 
         _find(c, func_list)
@@ -176,7 +178,14 @@ function class(name, ...)
     end
 
     -- 创建一个父类方法的查找表
-    local vtbl = {}
+    local vtbl = {
+        class_type = name,
+        get_class_func = get_class_func,
+        get_class = get_class,
+        get_super = get_super,
+        is_vaild = is_vaild,
+        CLS_MAGIC_KEY = CLS_MAGIC_KEY,
+    }
     _class[class_type._unique_key] = vtbl
 
     -- 设置该类的 newindex 元方法
@@ -188,31 +197,32 @@ function class(name, ...)
     })
 
     -- 类对象析构函数
-    vtbl.DTOR_OBJECT = function(obj)
+    vtbl.dtor_object = function(obj)
         do
             local _dtor
-
+            local dtor_table = {}
             -- 析构对象时，依次调用父类的 dtor 函数
             _dtor = function(c)
+                if dtor_table[c.name] then
+                    return
+                end
                 if c.dtor then
                     local status, e = pcall(c.dtor, obj)
                     if not status then
                         error(tostring(e))
-                        --[[
-                            print("Error:")
-                            print(tostring(e))
-                        ]]
                     end
+                    dtor_table[c.name] = true
                 end
 
                 if #c.super > 0 then
-                    for i = #c.super, 1, -1 do
+                    for i = 1, #c.super do
                         _dtor(c.super[i])
                     end
                 end
             end
 
             _dtor(class_type)
+            obj.is_ctor = false
         end
     end
 
@@ -222,7 +232,7 @@ function class(name, ...)
         local k = string.format("%s%s", c.name, f)
         local ret = vtbl[k]
 
-        if ret ~= nil_func then
+        if ret ~= CLS_MAGIC_KEY then
             -- 已存在该基类函数，直接调用
             local a, b, c, d, e = ret(obj, ...)
             return a, b, c, d, e
@@ -240,8 +250,6 @@ function class(name, ...)
                 end
             end
         end
-
-        -- vtbl[k] = nil_func
     end
 
     -- 若该类有继承父类，则为父类查找表 vtbl 设置 index 元方法（查找父类的可用方法）
@@ -249,28 +257,13 @@ function class(name, ...)
         setmetatable(vtbl, {
             __index =
                 function(t, k)
-                    local ret
-                    if k == "class_type" then
-                        ret = class_type.name
-                    else
-                        ret = search(k, class_type.super)
-                    end
-
+                    local ret = search(k, class_type.super)
                     if not ret then
-                        ret = nil_func
-                    end
-
-                    vtbl[k] = ret
-                    return ret
-                end
-        })
-    else
-        setmetatable(vtbl, {
-            __index =
-                function(t, k)
-                    local ret = nil_func
-                    if k == "class_type" then
-                        ret = class_type.name
+                        ---@diagnostic disable-next-line: assign-type-mismatch
+                        vtbl[k] = CLS_MAGIC_KEY
+                        return nil
+                    elseif ret == CLS_MAGIC_KEY then
+                        return nil
                     end
 
                     vtbl[k] = ret
@@ -282,13 +275,29 @@ function class(name, ...)
     return class_type
 end
 
+---@class base_class
+local base_class = {}
+--- 实例化对象
+--- @return any
+base_class.new = function(...)
+
+end
+
+--- 构造函数
+function base_class:ctor(...)
+end
+
+--- 析构函数
+function base_class:dtor(...)
+end
+
 return class
 
 --[[
 
 现在，我们来看看怎么使用：
 
-base_type=class("base")               -- 定义一个基类 base_type
+local base_type=class("base")   -- 定义一个基类 base_type
 
 function base_type:ctor(x)      -- 定义 base_type 的构造函数
         print("base_type ctor")
@@ -306,7 +315,7 @@ end
 以上是基本的 class 定义的语法，完全兼容 lua 的编程习惯。我增加了一个叫做 ctor 的词，作为构造函数的名字。
 下面看看怎样继承：
 
-test=class("test", base_type)   -- 定义一个类 test 继承于 base_type
+local test=class("test", base_type)   -- 定义一个类 test 继承于 base_type
 
 function test:ctor()    -- 定义 test 的构造函数
     print("test ctor")

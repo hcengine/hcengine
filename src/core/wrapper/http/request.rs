@@ -39,6 +39,9 @@ impl WrapperRequest {
 
         Object::object_def(lua, "set_url", hclua::function2(Self::set_url));
         Object::object_def(lua, "url", hclua::function1(Self::url));
+        
+        Object::object_def(lua, "set_path", hclua::function2(Self::set_path));
+        Object::object_def(lua, "path", hclua::function1(Self::path));
 
         Object::object_def(lua, "set_username", hclua::function2(Self::set_username));
         Object::object_def(lua, "username", hclua::function1(Self::username));

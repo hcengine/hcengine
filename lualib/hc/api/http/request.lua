@@ -13,17 +13,26 @@ end
 function Request:set_body(text)
 end
 
+---@return string
+function Request:url()
+end
+
 ---@param url string
 function Request:set_url(url)
+end
+
+---@return string
+function Request:path()
+end
+
+---@param path string
+function Request:set_path(path)
 end
 
 ---@return boolean
 function Request:is_http2()
 end
 
----@return string
-function Request:url()
-end
 
 
 ---@return string
@@ -45,4 +54,6 @@ end
 ---@return table
 function Request:header_all()
 end
+
+
 

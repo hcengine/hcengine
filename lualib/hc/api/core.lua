@@ -4,7 +4,7 @@ error("辅助编译器解读")
 ---@field public id integer @service's id
 ---@field public name string @service's name
 ---@field public unique string @service's unique
-local core = { }
+local core = {}
 
 --- let server exit: exitcode>=0 will wait all services quit.
 ---@param exitcode integer
@@ -13,7 +13,6 @@ function core.exit(exitcode) end
 --- remove a service
 --- @param service_id  integer 服务器id
 function core.close(service_id) end
-
 
 --- new service
 --- @param conf ServiceConf 配置
@@ -55,7 +54,6 @@ function core.now_ms() end
 --- @return string | string[]
 function core.env(arg) end
 
-
 --- 绑定连接
 --- @param method string
 --- @param url string
@@ -70,12 +68,10 @@ function core.bind_listen(method, url, settings) end
 --- @return integer
 function core.connect(method, url, settings) end
 
-
 --- 关闭连接
 --- @param id integer
 --- @param reason string
 function core.close_socket(id, reason) end
-
 
 --- 发送消息
 --- @param id integer
