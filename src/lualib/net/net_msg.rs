@@ -5,7 +5,6 @@ use hcnet::Message;
 
 #[derive(ObjectMacro, Clone)]
 #[hclua_cfg(name = NetMsg)]
-#[hclua_cfg(light)]
 pub struct WrapMessage {
     #[hclua_skip]
     pub msg: Message,

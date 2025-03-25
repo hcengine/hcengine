@@ -26,6 +26,9 @@ end
 function Response:set_body(text)
 end
 
+function Response:get_body()
+end
+
 ---@return string
 function Response:header_get()
 end

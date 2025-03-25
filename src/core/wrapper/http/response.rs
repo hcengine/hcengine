@@ -5,7 +5,6 @@ use wmhttp::{Body, RecvResponse};
 
 #[derive(ObjectMacro, Debug)]
 #[hclua_cfg(name = Response)]
-#[hclua_cfg(light)]
 pub struct WrapperResponse {
     #[hclua_skip]
     pub r: RecvResponse,
@@ -27,7 +26,6 @@ impl WrapperResponse {
     pub fn register_all(lua: &mut Lua) {
         Self::register(lua);
         type Object = WrapperResponse;
-        // impl_obj_fn!(WrapperResponse, lua, res, header);
         Object::object_def(lua, "status_code", hclua::function1(Self::status_code));
         Object::object_def(lua, "set_status_code", hclua::function2(Self::set_status_code));
         Object::object_def(lua, "status_str", hclua::function1(Self::status_str));

@@ -6,7 +6,6 @@ use wmhttp::{ClientOption, ProtError, ProxyScheme, TimeoutLayer};
 
 #[derive(ObjectMacro, Default)]
 #[hclua_cfg(name = ClientOption)]
-#[hclua_cfg(light)]
 pub struct WrapperClientOption {
     #[hclua_skip]
     pub client: ClientOption,

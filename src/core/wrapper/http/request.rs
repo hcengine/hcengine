@@ -6,7 +6,6 @@ use wmhttp::{Body, RecvRequest};
 
 #[derive(ObjectMacro, Debug)]
 #[hclua_cfg(name = Request)]
-#[hclua_cfg(light)]
 pub struct WrapperRequest {
     #[hclua_skip]
     pub r: RecvRequest,

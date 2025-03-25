@@ -5,9 +5,9 @@ use hclua::{lua_State, Lua, LuaObject, LuaPush, ObjectMacro};
 
 use crate::{core::wrapper::WrapperLuaMsg, Config};
 
+/// Lua中的消息映射
 #[derive(Default, ObjectMacro)]
 #[hclua_cfg(name = LuaMsg)]
-#[hclua_cfg(light)]
 pub struct LuaMsg {
     pub ty: u8,
     pub sender: u32,
