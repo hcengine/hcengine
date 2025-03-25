@@ -84,6 +84,13 @@ function get_super(c, func_name)
     return nil
 end
 
+function call_super(c, func_name, ...)
+    local func = get_super(c, func_name)
+    if func then
+        return func(...)
+    end
+end
+
 function is_vaild(v)
     return v.is_ctor
 end
@@ -111,15 +118,13 @@ function class(name, ...)
     class_type._unique_key = new_unique()
     class_type.super = { ... }
     class_type.ob_list = {}
+    class_type.ctor = false
+    class_type.dtor = false
     setmetatable(class_type.ob_list, { __mode = "v" })
 
     -- 类对象创建函数
     class_type.new = function(...)
         local obj = { is_ctor = true }
-
-        -- for key, value in pairs(_class[class_type._unique_key]) do
-        --     obj[key] = value
-        -- end
 
         -- 这一句被我提前了，解决构造函数里不能调成员函数的问题
         -- 设置新对象的元表，其中的 index 元方法设置为一个父类方法查找表
@@ -183,6 +188,7 @@ function class(name, ...)
         get_class_func = get_class_func,
         get_class = get_class,
         get_super = get_super,
+        call_super = call_super,
         is_vaild = is_vaild,
         CLS_MAGIC_KEY = CLS_MAGIC_KEY,
     }
@@ -275,12 +281,41 @@ function class(name, ...)
     return class_type
 end
 
+-- class_type = name,
+-- get_class_func = get_class_func,
+-- get_class = get_class,
+-- get_super = get_super,
+-- is_vaild = is_vaild,
+
 ---@class base_class
+---@field class_type string
 local base_class = {}
 --- 实例化对象
 --- @return any
 base_class.new = function(...)
 
+end
+
+--- 获取所有的类
+function base_class:get_class()
+end
+
+--- 获取所有函数
+function base_class:get_class_func()
+end
+
+--- 获取父类函数
+--- @param name string
+function base_class:get_super(name)
+end
+
+--- 调用父类函数
+--- @param name string
+function base_class:call_super(name, ...)
+end
+
+--- 是否为合法
+function base_class:is_vaild()
 end
 
 --- 构造函数

@@ -28,6 +28,8 @@ pub struct ConfigOption {
     pub(crate) log_level: Option<LevelFilter>,
     #[serde(default = "default_log_file")]
     pub(crate) log_file: String,
+    
+    pub(crate) log_config_file: Option<String>,
     #[serde(default = "default_work_num")]
     pub(crate) worker_num: usize,
     #[serde(default)]

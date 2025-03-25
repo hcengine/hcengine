@@ -24,10 +24,10 @@ root:
 
 loggers:
   app::backend::db:
-    level: trace
+    level: info
     
   hcengine:
-    level: trace
+    level: info
     appenders:
       - default
       - stdout

@@ -22,6 +22,22 @@ function Request:set_url(url)
 end
 
 ---@return string
+function Request:query()
+end
+
+---@param query string
+function Request:set_query(query)
+end
+
+---@return string
+function Request:port()
+end
+
+---@param port integer
+function Request:set_port(port)
+end
+
+---@return string
 function Request:path()
 end
 
@@ -32,8 +48,6 @@ end
 ---@return boolean
 function Request:is_http2()
 end
-
-
 
 ---@return string
 function Request:header_get()
