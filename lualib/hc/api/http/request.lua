@@ -4,9 +4,16 @@ error("辅助编译器解读")
 ---@class Request: object
 Request = { }
 
+---@return string
+function Request:method()
+end
 
 ---@param method string | "'GET'" | "'POST'" | "'OPTION'" | "'DELETE'" | "'PUT'"
 function Request:set_method(method)
+end
+
+---@param text string
+function Request:write(text)
 end
 
 ---@param text string

@@ -47,6 +47,7 @@ pub struct ListenHttpServer {
     pub service_id: u32,
     pub session_id: i64,
     pub url: String,
+    pub timeout: Option<u32>,
 }
 
 pub enum HcHttp {
@@ -154,11 +155,12 @@ impl HcMsg {
         HcMsg::Net(HcNet::OpenConn(id, service_id))
     }
 
-    pub fn http_listen(service_id: u32, session_id: i64, url: String) -> Self {
+    pub fn http_listen(service_id: u32, session_id: i64, url: String, timeout: Option<u32>) -> Self {
         HcMsg::Http(HcHttp::ListenHttpServer(ListenHttpServer {
             service_id,
             session_id,
             url,
+            timeout,
         }))
     }
 

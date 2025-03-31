@@ -111,7 +111,6 @@ impl HcNode {
             let tick = now.duration_since(pre_tick).as_millis() as u64;
             pre_tick = now;
             let mut results = vec![];
-            // println!("delay id = {:?}", self.timer.get_delay_id());
             self.timer
                 .update_deltatime_with_callback(tick, &mut |_, id, v| {
                     results.push(HcMsg::tick_timer(v.val.service_id, id, v.val.is_repeat));

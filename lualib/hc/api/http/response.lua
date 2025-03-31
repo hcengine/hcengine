@@ -23,6 +23,10 @@ function Response:version()
 end
 
 ---@param text string
+function Response:write(text)
+end
+
+---@param text string
 function Response:set_body(text)
 end
 

@@ -249,11 +249,11 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
 
         table.set(
             "bind_http",
-            hclua::function1(move |addr: String| -> i64 {
+            hclua::function2(move |addr: String, timeout: Option<u32>| -> i64 {
                 let session = (*service).node.next_seq();
                 let id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
-                let _ = sender.send(HcMsg::http_listen(id, session, addr));
+                let _ = sender.send(HcMsg::http_listen(id, session, addr, timeout));
                 session
 
                 // tokio::spawn(async move {

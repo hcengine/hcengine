@@ -426,6 +426,7 @@ impl HcWorker {
         let con = HttpServer::new(
             http_id,
             server.service_id,
+            server.timeout,
             self.state.clone(),
             sender.clone(),
         );

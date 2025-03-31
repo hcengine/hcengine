@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 
 use hclua::{impl_obj_fn, Lua, LuaObject, LuaPush, ObjectMacro, RawString};
-use webparse::{Method, Request, Scheme, Url, Version, WebError};
+use webparse::{Method, Request, Scheme, Url, Version, WebError, WebResult};
 use wmhttp::{Body, RecvRequest};
 
 #[derive(ObjectMacro, Debug)]
@@ -60,6 +60,7 @@ impl WrapperRequest {
         Object::object_def(lua, "set_version", hclua::function2(Self::set_version));
 
         Object::object_def(lua, "version", hclua::function1(Self::version));
+        Object::object_def(lua, "write", hclua::function2(Self::write));
         Object::object_def(lua, "set_body", hclua::function2(Self::set_body));
         Object::object_def(lua, "header_get", hclua::function2(Self::header_get));
         Object::object_def(lua, "header_set", hclua::function3(Self::header_set));
@@ -153,6 +154,10 @@ impl WrapperRequest {
 
     pub fn version(&self) -> &str {
         self.r.version().as_str()
+    }
+
+    pub fn write(&mut self, body: RawString) -> WebResult<()> {
+        self.r.body_mut().write_data(&body.0)
     }
 
     pub fn set_body(&mut self, body: RawString) {

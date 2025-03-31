@@ -1,7 +1,10 @@
-use std::{sync::{
-    atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicUsize, Ordering},
-    Arc, RwLock,
-}, u32};
+use std::{
+    sync::{
+        atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicUsize, Ordering},
+        Arc, RwLock,
+    },
+    u32,
+};
 
 use algorithm::HashMap;
 use mysql_async::Opts;
@@ -37,9 +40,13 @@ impl HcNodeState {
     pub fn next_seq(&mut self) -> i64 {
         self.next.fetch_add(1, Ordering::Relaxed) as i64
     }
-    
+
     pub fn next_unique_seq(&mut self) -> i64 {
         self.unique.fetch_add(1, Ordering::Relaxed)
+    }
+
+    pub fn get_woker_num(&self) -> usize {
+        self.config.worker_num
     }
 
     pub fn insert_service(&mut self, name: String, id: u32) {
@@ -74,10 +81,9 @@ impl HcNodeState {
         let map = self.redis_url_map.read().unwrap();
         map.get(url_id).map(|v| v.clone())
     }
-    
+
     pub fn set_mysql_url(&mut self, val: String) -> Result<u32, mysql_async::Error> {
         let ops = Opts::from_url(&val)?;
-        println!("mysql ops = {:?}", ops);
         let mut map = self.mysql_url_map.write().unwrap();
         let index = map.len() as u32 + 1;
         for (k, v) in map.iter() {

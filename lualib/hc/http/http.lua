@@ -50,6 +50,7 @@ hc.http_request = function(req, option)
     return hc.wait(_http_request(req, option))
 end
 
+---@return Response|nil, string|nil
 hc.http_get = function(url, option)
     local req = Request.new()
     req:set_method("GET")
@@ -57,6 +58,7 @@ hc.http_get = function(url, option)
     return hc.wait(_http_request(req, option))
 end
 
+---@return Response|nil, string|nil
 hc.http_post = function(url, body, option)
     local req = Request.new()
     req:set_method("POST")

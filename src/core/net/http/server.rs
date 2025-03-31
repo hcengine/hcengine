@@ -4,6 +4,7 @@ use std::{
     io::Error,
     net::SocketAddr,
     sync::atomic::{AtomicU32, Ordering},
+    time::Duration,
 };
 
 use tokio::{
@@ -28,8 +29,18 @@ struct Operate {
 
 fn build_http_id(id: u16, service_id: u32, oper_id: u32) -> u64 {
     let work_id = Config::get_workid(service_id) as u64;
-    println!("old aa == {} b === {} c === {}", work_id, (id as u64), oper_id as u64);
-    println!("aa == {} b === {} c === {}", work_id << 48, (id as u64) << 32, oper_id as u64);
+    println!(
+        "old aa == {} b === {} c === {}",
+        work_id,
+        (id as u64),
+        oper_id as u64
+    );
+    println!(
+        "aa == {} b === {} c === {}",
+        work_id << 48,
+        (id as u64) << 32,
+        oper_id as u64
+    );
     let ret = (work_id << 48) + ((id as u64) << 32) + (oper_id as u64);
     ret
 }
@@ -45,14 +56,11 @@ impl HttpTrait for Operate {
     async fn operate(&mut self, req: RecvRequest) -> ProtResult<RecvResponse> {
         let mut builder = Response::builder().version(req.version().clone());
         println!("id === {:?} req = {}", self.get_http_id(), req.url());
-        let _ = self
-            .worker
-            .sender
-            .send(HcMsg::http_incoming(
-                self.service_id,
-                self.get_http_id(),
-                req,
-            ));
+        let _ = self.worker.sender.send(HcMsg::http_incoming(
+            self.service_id,
+            self.get_http_id(),
+            req,
+        ));
         match self.recv.recv().await {
             Some(v) => {
                 return Ok(v);
@@ -66,12 +74,11 @@ impl HttpTrait for Operate {
             }
         };
     }
-    
+
     async fn close_connect(&mut self) {
         println!("close connect!!!");
         let _ = self.sender.send_message(HcHttp::HttpClose(self.oper_id));
     }
-
 }
 
 pub struct HttpServer {
@@ -80,16 +87,24 @@ pub struct HttpServer {
     next_id: AtomicU32,
     worker: HcWorkerState,
     sender: HttpSender,
+    timeout: Option<u32>,
     /// todo! 按时间过期
     senders: HashMap<u32, Sender<RecvResponse>>,
 }
 
 impl HttpServer {
-    pub fn new(id: u16, service_id: u32, worker: HcWorkerState, sender: HttpSender) -> Self {
+    pub fn new(
+        id: u16,
+        service_id: u32,
+        timeout: Option<u32>,
+        worker: HcWorkerState,
+        sender: HttpSender,
+    ) -> Self {
         Self {
             id,
             service_id,
             worker,
+            timeout,
             next_id: AtomicU32::new(1),
             senders: HashMap::new(),
             sender,
@@ -98,6 +113,9 @@ impl HttpServer {
 
     pub async fn build_server(&mut self, stream: TcpStream, addr: SocketAddr) -> Server<TcpStream> {
         let mut server = Server::new(stream, Some(addr));
+        if let Some(t) = self.timeout {
+            server.set_timeout(Some(Duration::from_millis(t.into())));
+        }
         let next_id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let (sender, recv) = channel(1);
         self.senders.insert(next_id, sender);
