@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use bpaf::Bpaf;
 use log::LevelFilter;
+use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub struct ConfigOption {
     pub(crate) log_level: Option<LevelFilter>,
     #[serde(default = "default_log_file")]
     pub(crate) log_file: String,
-    
+
     pub(crate) log_config_file: Option<String>,
     #[serde(default = "default_work_num")]
     pub(crate) worker_num: usize,
@@ -38,5 +38,4 @@ pub struct ConfigOption {
     pub worker_path: Option<String>,
     #[serde(default)]
     pub bootstrap: Option<String>,
-    
 }

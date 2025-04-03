@@ -5,6 +5,7 @@ local hc2 = require("lualib.hc")
 local socket = require("socket")
 local http = require("socket.http");
 
+
 -- -- -- hc.print("socket = %o", socket)
 -- -- -- hc.print("http = %o", http)
 -- -- -- local sock = socket.bind("127.0.0.1", "8848")
@@ -331,3 +332,5 @@ msg.ty = 5;
 print("ty = ", msg.ty); --输出 ty = 5
 msg:set_ty(6)
 print("ty = ", msg:get_ty()); --输出 ty = 6
+
+hc.print("level = %o", hc.get_loglevel())

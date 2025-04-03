@@ -18,8 +18,10 @@ end
 --- 绑定HTTP服务器
 ---@param addr string
 ---@param router Router
-hc.bind_http = function(addr, router)
+---@param timeout integer
+hc.bind_http = function(addr, router, timeout)
     local http_id = hc.wait(_bind_http(addr))
+    -- local http_id = hc.wait(_bind_http(addr, timeout or 60))
     router_table[http_id] = router
     return http_id
 end

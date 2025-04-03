@@ -23,6 +23,7 @@ extern "C" fn get_env(lua: *mut lua_State) -> hclua::c_int {
     unsafe {
         let service = LuaService::get(lua);
         let v: Option<String> = LuaRead::lua_read_at_position(lua, 1);
+        Lua::lua_error(lua, "aaaa");
         let arg = unwrap_or!(v, return 0);
         match &*arg {
             "args" => {
@@ -98,6 +99,20 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
             hclua::function1(move |c: i32| {
                 println!("close !!!!!!!!! ============ {:p}", service);
                 (*service).exit(c);
+            }),
+        );
+
+        table.set(
+            "set_loglevel",
+            hclua::function1(move |level: String| {
+                CoreUtils::set_loglevel(level);
+            }),
+        );
+
+        table.set(
+            "get_loglevel",
+            hclua::function0(move || -> String {
+                CoreUtils::get_loglevel()
             }),
         );
 

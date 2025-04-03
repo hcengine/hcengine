@@ -70,7 +70,7 @@ function hc.error_handle(...)
         err_msg = err_msg[1]
     end
 
-    hc.traceback(true)
+    -- hc.traceback(true)
     err_msg = string.format( "Error:\n%s\n", err_msg)
     hc.print( "%s", err_msg )
     return ""

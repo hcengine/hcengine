@@ -108,10 +108,12 @@ impl LuaService {
             lua_gc(lua, hclua::LUA_GCSTOP, 0);
             lua_gc(lua, hclua::LUA_GCGEN, 0);
 
+            println!("~~~~~~~~~~~~~~~~~~~~~~ok");
             let val: Option<()> = self
                 .lua
                 .exec_string(format!("require(\"{}\")", self.conf.source).to_string());
             self.ok = val.map(|_| true).unwrap_or(false);
+            println!("!!!!!!!!!!!!!!!!!!!!!ok");
             self.ok
         }
     }

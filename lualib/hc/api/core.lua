@@ -87,9 +87,13 @@ function core.bind_http(addr, timeout) end
 ---@param req Request
 function core.http_request(req, option) end
 
---- 返回http结果
----@param id integer
----@param res Response
-function core.send_response(id, res) end
+--- 设置日志等级
+---@param level string | "'TRACE'" | "'DEBUG'" | "'INFO'" | "'WARN'" | "'ERROR'"
+function core.set_loglevel(level) end
+
+
+--- 返回日志等级
+---@return string
+function core.get_loglevel() end
 
 return core

@@ -38,7 +38,12 @@ impl HcNode {
         for i in 0..worker_num.max(1) {
             let (work, sender) = HcWorker::new(i as u32, node_state.clone());
             senders.push(sender);
-            let rt = tokio::runtime::Runtime::new()?;
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .worker_threads(1)
+                .thread_stack_size(16 * 1024 * 1024)
+                .build()?;
+            // let rt = tokio::runtime::Runtime::new()?;
             rt.spawn(async {
                 let _ = work.run().await;
             });

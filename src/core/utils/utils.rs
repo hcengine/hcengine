@@ -1,4 +1,7 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    str::FromStr,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use log::{Level, LevelFilter};
 use log4rs::{
@@ -23,6 +26,16 @@ impl CoreUtils {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs()
+    }
+
+    pub fn set_loglevel(level: String) {
+        if let Ok(l) = LevelFilter::from_str(&*level) {
+            log::set_max_level(l);
+        }
+    }
+
+    pub fn get_loglevel() -> String {
+        log::max_level().to_string()
     }
 
     /// 尝试初始化, 如果已初始化则重新加载
@@ -56,7 +69,8 @@ impl CoreUtils {
             );
             if !option.disable_stdout {
                 let stdout: ConsoleAppender = ConsoleAppender::builder().build();
-                log_config = log_config.appender(Appender::builder().build("stdout", Box::new(stdout)));
+                log_config =
+                    log_config.appender(Appender::builder().build("stdout", Box::new(stdout)));
                 root = root.appender("stdout");
             }
 

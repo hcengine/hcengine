@@ -25,6 +25,7 @@ local hc = core
 
 local function wrap_co_resume(co, ...)
     local ok, err = co_resume(co, ...)
+    hc.print("ok = %o, err = %o", ok, err)
     if not ok then
         err = tostring(err)
         co_close(co)
@@ -41,7 +42,10 @@ local co_pool = setmetatable({}, { __mode = "kv" })
 
 local function invoke(co, fn, ...)
     co_num = co_num + 1
-    fn(...)
+    
+    pcall(fn, ...);
+    xpcall(fn, ERROR_HANDLE, ...);
+    -- fn(...)
     co_num = co_num - 1
     co_pool[#co_pool + 1] = co
 end
