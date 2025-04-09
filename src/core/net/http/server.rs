@@ -76,7 +76,6 @@ impl HttpTrait for Operate {
     }
 
     async fn close_connect(&mut self) {
-        println!("close connect!!!");
         let _ = self.sender.send_message(HcHttp::HttpClose(self.oper_id));
     }
 }
@@ -143,14 +142,11 @@ impl HttpServer {
                         if let Some(v) = value {
                             match v {
                                 crate::msg::HcHttp::HttpClose(oper_id) => {
-                                    println!("remove http senders!!!!!!!!!! {oper_id} {}", self.senders.contains_key(&oper_id));
                                     self.senders.remove(&oper_id);
                                 },
                                 crate::msg::HcHttp::HttpOutcoming(id, res) => {
                                     let id = id as u32;
-                                    println!("send out  http senders!!!!!!!!!! {id} all len = {}", self.senders.len());
                                     if let Some(sender) = self.senders.get_mut(&id) {
-                                        println!("sucess out  http senders!!!!!!!!!! {id}");
                                         let _ = sender.try_send(res);
                                     }
                                 },

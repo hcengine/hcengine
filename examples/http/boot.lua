@@ -5,6 +5,34 @@ local test_value_get = "test return get"
 local test_value_post = "test return post"
 local test_reg = "test reg"
 
+-- local ret, err = pcall(function() 
+--     hc.print("set_loglevelset_loglevelset_loglevel")
+--     hc.print("func === %oaa = %o", type(error_handle), hc.set_loglevel("aaaa"))
+--     hc.print("aaaaaaaaaaaaaaaa")
+-- end)
+hc.async(function() 
+    local ret, err = xpcall(function()
+        hc.print("aaaaa 1")
+        hc.env("path")
+        hc.print("bbbb 2")
+    end, ERROR_HANDLE)
+    hc.print("outer")
+end)
+
+-- hc.set_loglevel(nil)
+
+-- local ret, err = xpcall(function()
+--     hc.print("aaaaa")
+--     hc.bind_http("0.0.0.0:8082")
+--     hc.print("bbbb")
+-- end, ERROR_HANDLE)
+
+
+
+
+
+-- error("aaaaaaaaaaaaaa")
+
 hc.async(function()
     ---@type Router
     local router = hc.Router.new(function(req, res)
@@ -36,9 +64,9 @@ hc.async(function()
         res:header_set("ok", "val")
         return res
     end)
-
+    -- error("aaaaaaaaaaaaaa")
     --@param req Request
-    hc.bind_http("0.0.0.0:8082", router)
+    hc.bind_http("0.0.0.0:8082", router, 60)
     hc.timeout(1000, false, function()
         local res, err = hc.http_get("http://127.0.0.1:8082/")
         assert(res ~= nil and err == nil)
@@ -73,3 +101,4 @@ hc.async(function()
         hc.print("check /testaaaaaa success")
     end)
 end)
+

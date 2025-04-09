@@ -12,6 +12,11 @@
 
 #include <string.h>
 
+// #if LUA_VERSION_NUM > 0
+// // let xx = 111;
+// #define lua_newuserdata lua_newuserdatauv
+// #endif
+
 /*=========================================================================*\
 * Internal function prototypes
 \*=========================================================================*/
@@ -228,7 +233,7 @@ static int meth_accept(lua_State *L)
     const char *err = inet_tryaccept(&server->sock, server->family, &sock, tm);
     /* if successful, push client socket */
     if (err == NULL) {
-        p_tcp clnt = (p_tcp) lua_newuserdata(L, sizeof(t_tcp));
+        p_tcp clnt = (p_tcp) lua_newuserdatauv(L, sizeof(t_tcp), 1);
         auxiliar_setclass(L, "tcp{client}", -1);
         /* initialize structure fields */
         memset(clnt, 0, sizeof(t_tcp));
@@ -396,7 +401,7 @@ static int meth_gettimeout(lua_State *L)
 * Creates a master tcp object
 \*-------------------------------------------------------------------------*/
 static int tcp_create(lua_State *L, int family) {
-    p_tcp tcp = (p_tcp) lua_newuserdata(L, sizeof(t_tcp));
+    p_tcp tcp = (p_tcp) lua_newuserdatauv(L, sizeof(t_tcp), 1);
     memset(tcp, 0, sizeof(t_tcp));
     /* set its type as master object */
     auxiliar_setclass(L, "tcp{master}", -1);
@@ -439,7 +444,7 @@ static int global_connect(lua_State *L) {
     const char *localaddr  = luaL_optstring(L, 3, NULL);
     const char *localserv  = luaL_optstring(L, 4, "0");
     int family = inet_optfamily(L, 5, "unspec");
-    p_tcp tcp = (p_tcp) lua_newuserdata(L, sizeof(t_tcp));
+    p_tcp tcp = (p_tcp) lua_newuserdatauv(L, sizeof(t_tcp), 1);
     struct addrinfo bindhints, connecthints;
     const char *err = NULL;
     /* initialize tcp structure */

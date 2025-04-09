@@ -25,12 +25,12 @@ algorithm = {version = "^0.1.18", features = ["ttl"]}
 wmhttp = { path = "../wmhttp" }
 webparse = { path = "../webparse" }
 
-redis = { version = "0.28.2", features = ["tokio-rustls-comp", "cluster-async", "aio", "cluster"] }
+redis = { version = "^0.29.5", features = ["tokio-rustls-comp", "cluster-async", "aio", "cluster"] }
 
 hcnet = { path = "../hcnet" }
-hclua = { path = "../hclua", features = ["lua53"] }
-hclua-cjson = { features = ["lua53"], path = "./luac/hclua-cjson" }
-hclua-socket = { features = ["lua53"], path = "./luac/hclua-socket" }
+hclua = { path = "../hclua", features = ["lua54"] }
+hclua-cjson = { features = ["lua54"], path = "./luac/hclua-cjson" }
+hclua-socket = { features = ["lua54"], path = "./luac/hclua-socket" }
 
 hcproto = { path = "../hcproto/Rust" }
 

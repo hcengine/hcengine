@@ -23,7 +23,6 @@ extern "C" fn get_env(lua: *mut lua_State) -> hclua::c_int {
     unsafe {
         let service = LuaService::get(lua);
         let v: Option<String> = LuaRead::lua_read_at_position(lua, 1);
-        Lua::lua_error(lua, "aaaa");
         let arg = unwrap_or!(v, return 0);
         match &*arg {
             "args" => {
@@ -83,12 +82,12 @@ async fn bind_listen(method: String, url: String, settings: Settings) {
 }
 
 #[hclua::lua_module(name = "engine_core")]
-fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
+fn hc_module(lua: &mut Lua) -> libc::c_int {
     unsafe {
         let service = LuaService::get(lua.state());
         if service.is_null() {
             lua.error(format!("当前额外空间中必须注册LuaService对象"));
-            return None;
+            // return 0;
         }
         let mut table = lua.create_table();
         table.set("id", (*service).get_id());
@@ -270,11 +269,6 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
                 let sender = (*service).worker.sender.clone();
                 let _ = sender.send(HcMsg::http_listen(id, session, addr, timeout));
                 session
-
-                // tokio::spawn(async move {
-                //     let _ = HttpServer::start_http(addr).await;
-                // });
-                // id
             }),
         );
 
@@ -465,6 +459,6 @@ fn hc_module(lua: &mut Lua) -> Option<LuaTable> {
         // );
         // 获取环境变量
         table.register("env", get_env);
-        Some(table)
+        1
     }
 }

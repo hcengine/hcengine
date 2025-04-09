@@ -82,20 +82,27 @@ impl LuaService {
         unsafe {
             self.lua.openlibs();
             let service = self as *mut LuaService;
-            println!("aaa ============ {:p}", service);
+            println!("aaa ============ {:p} {}", service, self.lua.get_top());
             Lua::copy_to_extraspace(self.lua.state(), service);
+            println!("aaa03333 ============ {:p} {}", service, self.lua.get_top());
             luareg_engine_core(self.lua.state());
+            println!("aaa0000 ============ {:p} {}", service, self.lua.get_top());
             ServiceConf::register(&mut self.lua);
+            println!("aaa04444 ============ {:p} {}", service, self.lua.get_top());
             LuaMsg::register_all(&mut self.lua);
+            println!("aaa1 ============ {:p} {}", service, self.lua.get_top());
             WrapMessage::register_all(&mut self.lua);
             ProtocolObject::register_all(&mut self.lua);
             WrapperRequest::register_all(&mut self.lua);
             WrapperResponse::register_all(&mut self.lua);
+            println!("aaa2 ============ {:p} {}", service, self.lua.get_top());
 
             hclua_cjson::enable_cjson(&mut self.lua);
             hclua_socket::enable_socket_core(&mut self.lua);
+            println!("aaa3 ============ {:p} {}", service, self.lua.get_top());
 
             println!("woooooooooooooooooooo = {:?}", self.node.get_woker_path());
+            println!("!!111~~~~~~~~~~~~~~~~~~~~~~ok {}", self.lua.get_top());
             if let Some(woker) = self.node.get_woker_path() {
                 self.lua.add_path(false, woker);
             }
@@ -103,17 +110,21 @@ impl LuaService {
             self.lua.add_path(false, "lualib".to_string());
             self.lua.add_path(false, "luaext".to_string());
             self.lua.add_path(false, "game".to_string());
+            println!("!!2222~~~~~~~~~~~~~~~~~~~~~~ok {}", self.lua.get_top());
 
             let lua = self.lua.state();
             lua_gc(lua, hclua::LUA_GCSTOP, 0);
             lua_gc(lua, hclua::LUA_GCGEN, 0);
 
-            println!("~~~~~~~~~~~~~~~~~~~~~~ok");
+            println!("~~~~~~~~~~~~~~~~~~~~~~ok {}", self.lua.get_top());
+            assert!(self.lua.get_top() == 0);
             let val: Option<()> = self
                 .lua
                 .exec_string(format!("require(\"{}\")", self.conf.source).to_string());
             self.ok = val.map(|_| true).unwrap_or(false);
-            println!("!!!!!!!!!!!!!!!!!!!!!ok");
+            lua_gc(lua, hclua::LUA_GCRESTART, 0);
+            println!("!!!!!!!!!!!!!!!!!!!!!ok top = {:?}", self.lua.get_top());
+            assert!(self.lua.get_top() == 0);
             self.ok
         }
     }

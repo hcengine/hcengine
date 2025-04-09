@@ -44,6 +44,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "http",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=hcengine",
+                    "--package=hcengine"
+                ],
+                "filter": {
+                    "name": "hcengine",
+                    "kind": "bin"
+                }
+            },
+            "args": ["run", "-w", "examples/http", "-b", "boot"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'hcengine'",
             "cargo": {
                 "args": [
