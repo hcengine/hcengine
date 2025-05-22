@@ -437,26 +437,6 @@ fn hc_module(lua: &mut Lua) -> libc::c_int {
         run_mysql!("run_mysql_update", MysqlCmd::Update);
         run_mysql!("run_mysql_ignore", MysqlCmd::Ignore);
 
-        // table.set(
-        //     "delay",
-        //     hclua::function0(move || -> i64 {
-        //         println!("delay ooooooooooooooooooooooo");
-        //         let session = (*service).node.next_seq();
-        //         let (sender, receiver) = channel();
-        //         println!("delay zzzzzzzzzzzzzz");
-        //         tokio::spawn(async move {
-        //             println!("delay 1111111111111111 111");
-        //             println!("delay 3s");
-        //             tokio::time::sleep(Duration::from_secs(3)).await;
-        //             println!("delay end");
-        //             let _ = sender.send(());
-        //         });
-        //         println!("delay ooooooooooooooozzzzz  zzzzzzzz");
-        //         let _: Option<()> = receiver.recv().ok();
-        //         println!("receiver oks");
-        //         session
-        //     }),
-        // );
         // 获取环境变量
         table.register("env", get_env);
         1

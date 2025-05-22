@@ -1,5 +1,6 @@
 ---@type core
 local core = require("engine.core")
+local crypt = require("crypt")
 local _bind_http = core.bind_http
 local _http_request = core.http_request
 
@@ -7,6 +8,7 @@ local _http_request = core.http_request
 local hc = require("hc.core")
 
 hc.Router = require("hc.http.router")
+
 
 local router_table = {}
 
@@ -90,3 +92,11 @@ hc.http_post_json = function(url, json, option)
 end
 
 _G["hc_http_incoming"] = _hc_http_incoming
+
+
+local ret = crypt.md5("aaaaaaaaa")
+
+hc.print("md5 ret === %o", ret)
+local ret = crypt.hmac_md5("sec", "aaaaaaaaa")
+
+hc.print("hmac_md5 ret === %o", ret)

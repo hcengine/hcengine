@@ -5,10 +5,7 @@ use hcnet::NetConn;
 use wmhttp::{RecvRequest, RecvResponse};
 
 use crate::{
-    core::msg::HcOper,
-    luareg_engine_core,
-    wrapper::{WrapperRequest, WrapperResponse},
-    HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage,
+    core::msg::HcOper, luareg_crypt, luareg_engine_core, wrapper::{WrapperRequest, WrapperResponse}, HcNodeState, HcWorkerState, LuaMsg, ProtocolObject, WrapMessage
 };
 
 use super::ServiceConf;
@@ -86,6 +83,8 @@ impl LuaService {
             Lua::copy_to_extraspace(self.lua.state(), service);
             println!("aaa03333 ============ {:p} {}", service, self.lua.get_top());
             luareg_engine_core(self.lua.state());
+            println!("aaa0000 ============ {:p} {}", service, self.lua.get_top());
+            luareg_crypt(self.lua.state());
             println!("aaa0000 ============ {:p} {}", service, self.lua.get_top());
             ServiceConf::register(&mut self.lua);
             println!("aaa04444 ============ {:p} {}", service, self.lua.get_top());

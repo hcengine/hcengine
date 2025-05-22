@@ -19,13 +19,18 @@ log = "0.4.22"
 # hcnet = "0.1"
 # hclua = {version = "0.1.5", features = ["lua52"]}
 # algorithm = { path = "../algorithm" }
-algorithm = {version = "^0.1.18", features = ["ttl"]}
+algorithm = { version = "^0.1.18", features = ["ttl"] }
 # webparse = "0.3.0"
 # wmhttp = "0.3.1"
 wmhttp = { path = "../wmhttp" }
 webparse = { path = "../webparse" }
 
-redis = { version = "^0.29.5", features = ["tokio-rustls-comp", "cluster-async", "aio", "cluster"] }
+redis = { version = "^0.29.5", features = [
+    "tokio-rustls-comp",
+    "cluster-async",
+    "aio",
+    "cluster",
+] }
 
 hcnet = { path = "../hcnet" }
 hclua = { path = "../hclua", features = ["lua54"] }
@@ -53,5 +58,9 @@ bpaf = { version = "0.9.8", features = [
 mysql_async = "0.35.1"
 futures-util = "0.3"
 
+hmac = "0.12"
+md-5 = "0.10"
+sha2 = "0.10"
+base64 = "0.22"  
 # [workspace]
 # members = ["hclua-cjson", "hclua-socket"]
