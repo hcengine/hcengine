@@ -1,7 +1,12 @@
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, Cbc};
+use des::Des;
 use hclua::{Lua, RawString};
 use hmac::{Hmac, Mac};
 use md5::{Digest, Md5};
 use sha2::Sha256;
+
+type DesCbc = Cbc<Des, Pkcs7>;
 type HmacSha256 = Hmac<Sha256>;
 type HmacMd5 = Hmac<Md5>;
 
@@ -50,6 +55,20 @@ fn base64_decode(val: String) -> Option<RawString> {
     }
 }
 
+fn des_encode(key: String, iv: String, val: RawString) -> RawString {
+    let cipher = DesCbc::new_from_slices(key.as_bytes(), iv.as_bytes()).unwrap();
+    let ciphertext = cipher.encrypt_vec(&val.0);
+    RawString(ciphertext)
+}
+
+fn des_decode(key: String, iv: String, val: RawString) -> Option<RawString> {
+    let cipher = DesCbc::new_from_slices(key.as_bytes(), iv.as_bytes()).unwrap();
+    match cipher.decrypt_vec(&val.0) {
+        Ok(v) => Some(RawString(v)),
+        Err(_) => None,
+    }
+}
+
 #[hclua::lua_module(name = "crypt")]
 fn crypt_module(lua: &mut Lua) -> libc::c_int {
     let mut table = lua.create_table();
@@ -58,5 +77,7 @@ fn crypt_module(lua: &mut Lua) -> libc::c_int {
     table.set("hmac_sha256", hclua::function2(hmac_sha256));
     table.set("base64_encode", hclua::function1(base64_encode));
     table.set("base64_decode", hclua::function1(base64_decode));
+    table.set("des_encode", hclua::function3(des_encode));
+    table.set("des_decode", hclua::function3(des_decode));
     1
 }

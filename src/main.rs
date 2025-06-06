@@ -7,6 +7,8 @@ use tokio::task;
 
 #[tokio::main]
 async fn main() {
+    use colored::*;
+    println!("{}", "红色文本".red());
     let config = match parse_env().await {
         Ok(config) => config,
         Err(e) => {
@@ -16,6 +18,7 @@ async fn main() {
     CoreUtils::try_init_log(&config);
     println!("args = {:?}", config);
     log::warn!("aaaaaaaaaaaaaa");
+    log::warn!("{} xcxxxxxxxxxxxxx", "aaa".red());
     let mut conf = ServiceConf::bootstrap();
     if let Some(b) = config.bootstrap.clone() {
         conf.source = b;
