@@ -67,5 +67,6 @@ des = "0.7"
 block-modes = "0.8"
 
 colored = "3.0.0"
+tokio-rustls = "0.26"
 # [workspace]
 # members = ["hclua-cjson", "hclua-socket"]

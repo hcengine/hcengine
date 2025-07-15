@@ -63,7 +63,7 @@ fn lua_print(method: u8, val: String) {
 }
 
 async fn bind_listen(method: String, url: String, settings: Settings) {
-    let conn = match &*method {
+    let _conn = match &*method {
         "ws" => NetConn::ws_bind("0.0.0.0:2003", settings).await.unwrap(),
         "wss" => {
             // let mut settings = Settings {
@@ -204,6 +204,28 @@ fn hc_module(lua: &mut Lua) -> libc::c_int {
             hclua::function0(move || -> u64 { CoreUtils::now_ms() }),
         );
 
+        table.set("current_dir", hclua::function0(move || -> String {
+            match std::env::current_dir() {
+                Ok(path) => {
+                    path.to_string_lossy().to_string()
+                },
+                Err(_) => {
+                    String::new()
+                }
+            }
+        }));
+        
+        table.set("current_exe", hclua::function0(move || -> String {
+            match std::env::current_exe() {
+                Ok(path) => {
+                    path.to_string_lossy().to_string()
+                },
+                Err(_) => {
+                    String::new()
+                }
+            }
+        }));
+
         table.set("lua_print", hclua::function2(lua_print));
         table.set(
             "bind_listen",
@@ -263,11 +285,11 @@ fn hc_module(lua: &mut Lua) -> libc::c_int {
 
         table.set(
             "bind_http",
-            hclua::function2(move |addr: String, timeout: Option<u32>| -> i64 {
+            hclua::function2(move |addr: String, settings: Option<WrapSerde<Settings>>| -> i64 {
                 let session = (*service).node.next_seq();
                 let id = (*service).get_id();
                 let sender = (*service).worker.sender.clone();
-                let _ = sender.send(HcMsg::http_listen(id, session, addr, timeout));
+                let _ = sender.send(HcMsg::http_listen(id, session, addr, settings.map(|v| v.value).unwrap_or_default()));
                 session
             }),
         );

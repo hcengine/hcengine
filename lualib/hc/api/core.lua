@@ -80,8 +80,8 @@ function core.send_msg(id, msg) end
 
 --- 绑定HTTP服务器
 ---@param addr string
----@param timeout integer | nil
-function core.bind_http(addr, timeout) end
+---@param settings net_settings | nil
+function core.bind_http(addr, settings) end
 
 --- 发起http请求
 ---@param req Request

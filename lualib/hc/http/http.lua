@@ -20,9 +20,12 @@ end
 --- 绑定HTTP服务器
 ---@param addr string
 ---@param router Router
----@param timeout integer
-hc.bind_http = function(addr, router, timeout)
-    local http_id = hc.wait(_bind_http(addr, timeout))
+---@param settings net_settings
+hc.bind_http = function(addr, router, settings)
+    if type(settings) ~= "table" then
+        settings = {}
+    end
+    local http_id = hc.wait(_bind_http(addr, settings or {}))
     -- local http_id = hc.wait(_bind_http(addr, timeout or 60))
     router_table[http_id] = router
     return http_id
